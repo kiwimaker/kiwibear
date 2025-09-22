@@ -225,6 +225,15 @@ const Icon = ({ type, color = 'currentColor', size = 16, title = '', classes = '
          {type === 'integration'
             && <svg {...xmlnsProps} width={size} viewBox="0 0 24 24">
                   <path fill="none" stroke={color} strokeWidth={2} d="M10 21c-2.5 2.5-5 2-7 0s-2.5-4.5 0-7l3-3l7 7zm4-18c2.5-2.5 5-2 7.001 0c2.001 2 2.499 4.5 0 7l-3 3L11 6zm-3 7l-2.5 2.5zm3 3l-2.5 2.5z"></path>
+              </svg>
+         }
+
+         {type === 'trophy'
+            && <svg {...xmlnsProps} width={size} viewBox="0 0 24 24">
+                  <path
+                     fill={color}
+                     d="M18 4V2a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v2H2v4a4 4 0 0 0 4 4h1a5.99 5.99 0 0 0 4 1.528V16H8a1 1 0 0 0-1 1v2h10v-2a1 1 0 0 0-1-1h-3v-2.472A5.99 5.99 0 0 0 17 12h1a4 4 0 0 0 4-4V4h-4ZM6 10a2 2 0 0 1-2-2V6h2Zm14-2a2 2 0 0 1-2 2V6h2Z"
+                  />
                </svg>
          }
 

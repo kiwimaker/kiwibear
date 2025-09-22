@@ -60,6 +60,7 @@ const Keyword = (props: KeywordProps) => {
       lastUpdateError = false,
       volume,
       domainMatches = 0,
+      settings: keywordSettings,
    } = keywordData;
 
    const [showOptions, setShowOptions] = useState(false);
@@ -104,10 +105,11 @@ const Keyword = (props: KeywordProps) => {
 
    const optionsButtonStyle = 'block px-2 py-2 cursor-pointer hover:bg-indigo-50 hover:text-blue-700';
    const hasCannibalization = domainMatches > 1;
-   const cannibalBadgeClass = [
-      'ml-2 inline-flex items-center rounded-full bg-rose-100 px-2',
-      'py-[1px] text-[10px] font-semibold uppercase text-rose-700',
-   ].join(' ');
+   const badgeBaseClass = 'ml-2 inline-flex items-center whitespace-nowrap rounded px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-wide';
+   const cannibalBadgeClass = `${badgeBaseClass} rounded-full bg-rose-50 border border-rose-200 text-rose-700`;
+   const top20BadgeClass = `${badgeBaseClass} rounded-full bg-amber-50 border border-amber-200 text-amber-700`;
+   const hasExtendedSerp = !!(keywordSettings && (keywordSettings.fetchTop20
+      || (keywordSettings.serpPages && keywordSettings.serpPages > 1)));
 
    return (
       <div
@@ -141,10 +143,15 @@ const Keyword = (props: KeywordProps) => {
                   <Icon type="error" size={18} color="#FF3672" />
                </button>
             }
+            {hasExtendedSerp && (
+               <span className={top20BadgeClass} title='Seguimiento hasta el top 20'>
+                  <Icon type='trophy' size={12} color='#b45309' classes='mr-1 top-[1px]' />
+                  20
+               </span>
+            )}
             {hasCannibalization && (
-               <span className={cannibalBadgeClass}>
-                  <Icon type='error' size={12} color='#DC2626' classes='mr-1 top-[1px]' />
-                  Canibalización
+               <span className={cannibalBadgeClass} title='2 o más URLs en el top 20'>
+                  2+ URLs
                </span>
             )}
          </div>

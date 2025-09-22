@@ -26,14 +26,51 @@ export type RefreshResult = false | {
    error?: boolean | string
 }
 
+const resolveKeywordSettings = (keyword: KeywordType): KeywordCustomSettings | undefined => {
+   const rawSettings = (keyword as any)?.settings;
+   if (!rawSettings) { return undefined; }
+   if (typeof rawSettings === 'object' && !Array.isArray(rawSettings)) {
+      return rawSettings as KeywordCustomSettings;
+   }
+   if (typeof rawSettings === 'string') {
+      try {
+         const parsed = JSON.parse(rawSettings);
+         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return parsed as KeywordCustomSettings;
+         }
+      } catch (error) {
+         console.log('[WARN] Failed to parse keyword settings inside scraper', error);
+      }
+   }
+   return undefined;
+};
+
+const determineRequestedPages = (settings?: KeywordCustomSettings): number => {
+   if (!settings) { return 1; }
+   if (settings.serpPages !== undefined) {
+      const pages = Number(settings.serpPages);
+      if (!Number.isNaN(pages) && pages > 1) {
+         return Math.min(10, Math.floor(pages));
+      }
+   }
+   if (settings.fetchTop20) { return 2; }
+   return 1;
+};
+
 /**
  * Creates a SERP Scraper client promise based on the app settings.
  * @param {KeywordType} keyword - the keyword to get the SERP for.
  * @param {SettingsType} settings - the App Settings that contains the scraper details
  * @returns {Promise}
  */
-export const getScraperClient = (keyword:KeywordType, settings:SettingsType, scraper?: ScraperSettings): Promise<AxiosResponse|Response> | false => {
-   let apiURL = ''; let client: Promise<AxiosResponse|Response> | false = false;
+export const getScraperClient = (
+   keyword:KeywordType,
+   settings:SettingsType,
+   scraper?: ScraperSettings,
+   overrideURL?: string,
+): Promise<AxiosResponse|Response> | false => {
+   let apiURL = '';
+   let client: Promise<AxiosResponse|Response> | false = false;
    const headers: any = {
       'Content-Type': 'application/json',
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246',
@@ -49,7 +86,7 @@ export const getScraperClient = (keyword:KeywordType, settings:SettingsType, scr
    if (scraper) {
       // Set Scraper Header
       const scrapeHeaders = scraper.headers ? scraper.headers(keyword, settings) : null;
-      const scraperAPIURL = scraper.scrapeURL ? scraper.scrapeURL(keyword, settings, countries) : null;
+      const scraperAPIURL = overrideURL || (scraper.scrapeURL ? scraper.scrapeURL(keyword, settings, countries) : null);
       if (scrapeHeaders && Object.keys(scrapeHeaders).length > 0) {
          Object.keys(scrapeHeaders).forEach((headerItemKey:string) => {
             headers[headerItemKey] = scrapeHeaders[headerItemKey as keyof object];
@@ -105,25 +142,82 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
    };
    const scraperType = settings?.scraper_type || '';
    const scraperObj = allScrapers.find((scraper:ScraperSettings) => scraper.id === scraperType);
-   const scraperClient = getScraperClient(keyword, settings, scraperObj);
+   const keywordSettings = resolveKeywordSettings(keyword);
+   const requestedPages = determineRequestedPages(keywordSettings);
+   const keywordForScraper = keywordSettings && keyword.settings !== keywordSettings
+      ? { ...keyword, settings: keywordSettings }
+      : keyword;
+
+   const scraperClient = getScraperClient(keywordForScraper, settings, scraperObj);
 
    if (!scraperClient) { return false; }
 
    let scraperError:any = null;
    try {
-      const res = scraperType === 'proxy' && settings.proxy ? await scraperClient : await scraperClient.then((reslt:any) => reslt.json());
-      const scraperResult = scraperObj?.resultObjectKey && res[scraperObj.resultObjectKey] ? res[scraperObj.resultObjectKey] : '';
-      const scrapeResult:string = (res.data || res.html || res.results || scraperResult || '');
-      if (res && scrapeResult) {
-         const extracted = scraperObj?.serpExtractor ? scraperObj.serpExtractor(scrapeResult) : extractScrapedResult(scrapeResult, keyword.device);
-         const annotatedResults = addDomainMatchFlag(extracted, keyword.domain);
-         // await writeFile('result.txt', JSON.stringify(scrapeResult), { encoding: 'utf-8' }).catch((err) => { console.log(err); });
+      const responses:any[] = [];
+      const baseResponse = scraperType === 'proxy' && settings.proxy
+         ? await scraperClient
+         : await scraperClient.then((reslt:any) => reslt.json());
+      responses.push(baseResponse);
+
+      const additionalURLs = (requestedPages > 1 && scraperObj?.additionalScrapeURLs)
+         ? scraperObj.additionalScrapeURLs(keywordForScraper, settings, countries)
+         : [];
+      const limitedAdditionalURLs = Array.isArray(additionalURLs)
+         ? additionalURLs.slice(0, Math.max(0, requestedPages - 1))
+         : [];
+
+      if (limitedAdditionalURLs.length > 0) {
+         for (const url of limitedAdditionalURLs) {
+            if (!url) { continue; }
+            const additionalClient = getScraperClient(keywordForScraper, settings, scraperObj, url);
+            if (!additionalClient) { continue; }
+            try {
+               const additionalResponse = scraperType === 'proxy' && settings.proxy
+                  ? await additionalClient
+                  : await additionalClient.then((reslt:any) => reslt.json());
+               responses.push(additionalResponse);
+            } catch (additionalError:any) {
+               console.log('[WARN] Failed to fetch additional SERP page', additionalError);
+               if (!scraperError) {
+                  scraperError = additionalError;
+               }
+            }
+         }
+      }
+
+      const extractedPages: SearchResult[][] = [];
+      for (const response of responses) {
+         if (!response) { continue; }
+         const scraperResult = scraperObj?.resultObjectKey && response[scraperObj.resultObjectKey]
+            ? response[scraperObj.resultObjectKey]
+            : '';
+         const scrapeResult:string = (response.data || response.html || response.results || scraperResult || '');
+         if (!scrapeResult) { continue; }
+         const extracted = scraperObj?.serpExtractor
+            ? scraperObj.serpExtractor(scrapeResult)
+            : extractScrapedResult(scrapeResult, keyword.device);
+         if (Array.isArray(extracted) && extracted.length > 0) {
+            extractedPages.push(extracted);
+         }
+      }
+
+      if (extractedPages.length > 0) {
+         const mergedResults = mergePaginatedResults(extractedPages);
+         const annotatedResults = addDomainMatchFlag(mergedResults, keyword.domain);
          const serp = getSerp(keyword.domain, annotatedResults);
-         refreshedResults = { ID: keyword.ID, keyword: keyword.keyword, position: serp.postion, url: serp.url, result: annotatedResults, error: false };
+         refreshedResults = {
+            ID: keyword.ID,
+            keyword: keyword.keyword,
+            position: serp.postion,
+            url: serp.url,
+            result: annotatedResults,
+            error: false,
+         };
          console.log('[SERP]: ', keyword.keyword, serp.postion, serp.url);
       } else {
-         scraperError = res.detail || res.error || 'Unknown Error';
-         throw new Error(res);
+         scraperError = baseResponse.detail || baseResponse.error || 'Unknown Error';
+         throw new Error(baseResponse);
       }
    } catch (error:any) {
       refreshedResults.error = scraperError || 'Unknown Error';
@@ -142,6 +236,27 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
    }
 
    return refreshedResults;
+};
+
+const mergePaginatedResults = (pages: SearchResult[][]): SearchResult[] => {
+   const merged: SearchResult[] = [];
+   const seenUrls = new Set<string>();
+   let highestPosition = 0;
+
+   for (const page of pages) {
+      for (const item of page) {
+         if (!item || !item.url || seenUrls.has(item.url)) { continue; }
+         let position = Number.isInteger(item.position) ? item.position : 0;
+         if (position <= highestPosition) {
+            position = highestPosition + 1;
+         }
+         highestPosition = Math.max(highestPosition, position);
+         merged.push({ ...item, position });
+         seenUrls.add(item.url);
+      }
+   }
+
+   return merged.sort((a, b) => a.position - b.position);
 };
 
 /**

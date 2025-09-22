@@ -28,6 +28,11 @@ type KeywordHistory = {
    [date:string] : KeywordHistoryEntry
 }
 
+type KeywordCustomSettings = {
+   fetchTop20?: boolean,
+   serpPages?: number,
+}
+
 type KeywordType = {
    ID: number,
    keyword: string,
@@ -49,6 +54,7 @@ type KeywordType = {
    scData?: KeywordSCData,
    uid?: string
    city?: string
+   settings?: KeywordCustomSettings
 }
 
 type KeywordLastResult = {
@@ -138,7 +144,8 @@ type KeywordAddPayload = {
    country: string,
    domain: string,
    tags?: string,
-   city?:string
+   city?:string,
+   fetchTop20?: boolean,
 }
 
 type SearchAnalyticsRawItem = {
@@ -255,6 +262,8 @@ interface ScraperSettings {
    headers?(keyword:KeywordType, settings: SettingsType): Object,
    /** Construct the API URL for scraping the data through your Scraper's API */
    scrapeURL?(keyword:KeywordType, settings:SettingsType, countries:countryData): string,
+   /** Provide additional API URLs to query when the provider requires multiple calls per keyword. */
+   additionalScrapeURLs?(keyword:KeywordType, settings:SettingsType, countries:countryData): string[],
    /** Custom function to extract the serp result from the scraped data. The extracted data should be @return {scraperExtractedItem[]} */
    serpExtractor?(content:string): scraperExtractedItem[],
 }

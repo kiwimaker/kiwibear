@@ -20,6 +20,7 @@ type KeywordsInput = {
    domain: string,
    tags: string,
    city?:string,
+   fetchTop20: boolean,
 }
 
 const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCity = false }: AddKeywordsProps) => {
@@ -28,8 +29,16 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
 
    const [error, setError] = useState<string>('');
    const [showTagSuggestions, setShowTagSuggestions] = useState(false);
-   const [newKeywordsData, setNewKeywordsData] = useState<KeywordsInput>({ keywords: '', device: 'desktop', country: defCountry, domain, tags: '' });
+   const [newKeywordsData, setNewKeywordsData] = useState<KeywordsInput>({
+      keywords: '',
+      device: 'desktop',
+      country: defCountry,
+      domain,
+      tags: '',
+      fetchTop20: false,
+   });
    const { mutate: addMutate, isLoading: isAdding } = useAddKeywords(() => closeModal(false));
+   const canTrackTop20 = !!(scraperName && scraperName.toLowerCase().includes('serper'));
 
    const existingTags: string[] = useMemo(() => {
       const allTags = keywords.reduce((acc: string[], keyword) => [...acc, ...keyword.tags], []).filter((t) => t && t.trim() !== '');
@@ -62,18 +71,24 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
             setError(`Keywords ${keywordExist.join(',')} already Exist`);
             setTimeout(() => { setError(''); }, 3000);
          } else {
-            const newKeywords = keywordsArray.flatMap((k) =>
+            const newKeywords = keywordsArray.flatMap((k) => (
                devices.filter((device) =>
-                 !currentKeywords.includes(`${k}-${device}-${nkwrds.country}${nkwrds.city ? `-${nkwrds.city}` : ''}`),
-               ).map((device) => ({
-                 keyword: k,
-                 device,
-                 country: nkwrds.country,
-                 domain: nkwrds.domain,
-                 tags: nkwrds.tags,
-                 city: nkwrds.city,
-               })),
-             );
+                  !currentKeywords.includes(`${k}-${device}-${nkwrds.country}${nkwrds.city ? `-${nkwrds.city}` : ''}`),
+               ).map((device) => {
+                  const payload: KeywordAddPayload = {
+                     keyword: k,
+                     device,
+                     country: nkwrds.country,
+                     domain: nkwrds.domain,
+                     tags: nkwrds.tags,
+                     city: nkwrds.city,
+                  };
+                  if (canTrackTop20 && nkwrds.fetchTop20) {
+                     payload.fetchTop20 = true;
+                  }
+                  return payload;
+               })
+            ));
             addMutate(newKeywords);
          }
       } else {
@@ -161,6 +176,17 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
                      </ul>
                   )}
                </div>
+               {canTrackTop20 && (
+                  <label className='flex items-center gap-2 text-sm text-gray-600 mt-3 cursor-pointer select-none'>
+                     <input
+                        type='checkbox'
+                        className='accent-blue-600'
+                        checked={newKeywordsData.fetchTop20}
+                        onChange={(e) => setNewKeywordsData({ ...newKeywordsData, fetchTop20: e.target.checked })}
+                     />
+                     <span>Obtener hasta el top 20 (realiza dos búsquedas)</span>
+                  </label>
+               )}
                <div className='relative mt-2'>
                   <input
                      className={`w-full border rounded border-gray-200 py-2 px-4 pl-8 

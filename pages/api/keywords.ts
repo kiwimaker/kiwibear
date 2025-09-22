@@ -64,7 +64,15 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
          const historySorted = historyArray.sort((a, b) => a.date - b.date);
          const lastWeekHistory :KeywordHistory = {};
          historySorted.slice(-7).forEach((x:any) => { lastWeekHistory[x.dateRaw] = x.position; });
-         const keywordWithSlimHistory = { ...keyword, lastResult: [], history: lastWeekHistory };
+         const domainMatches = Array.isArray(keyword.lastResult)
+            ? keyword.lastResult.filter((item) => item?.matchesDomain).length
+            : 0;
+         const keywordWithSlimHistory = {
+            ...keyword,
+            domainMatches,
+            lastResult: [],
+            history: lastWeekHistory,
+         };
          const finalKeyword = domainSCData ? integrateKeywordSCData(keywordWithSlimHistory, domainSCData) : keywordWithSlimHistory;
          return finalKeyword;
       });

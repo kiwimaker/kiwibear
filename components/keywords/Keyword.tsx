@@ -45,7 +45,20 @@ const Keyword = (props: KeywordProps) => {
       maxTitleColumnWidth,
    } = props;
    const {
-      keyword, domain, ID, city, position, url = '', lastUpdated, country, sticky, history = {}, updating = false, lastUpdateError = false, volume,
+      keyword,
+      domain,
+      ID,
+      city,
+      position,
+      url = '',
+      lastUpdated,
+      country,
+      sticky,
+      history = {},
+      updating = false,
+      lastUpdateError = false,
+      volume,
+      domainMatches = 0,
    } = keywordData;
 
    const [showOptions, setShowOptions] = useState(false);
@@ -89,6 +102,11 @@ const Keyword = (props: KeywordProps) => {
    }, [history]);
 
    const optionsButtonStyle = 'block px-2 py-2 cursor-pointer hover:bg-indigo-50 hover:text-blue-700';
+   const hasCannibalization = domainMatches > 1;
+   const cannibalBadgeClass = [
+      'ml-2 inline-flex items-center rounded-full bg-rose-100 px-2',
+      'py-[1px] text-[10px] font-semibold uppercase text-rose-700',
+   ].join(' ');
 
    return (
       <div
@@ -122,6 +140,12 @@ const Keyword = (props: KeywordProps) => {
                   <Icon type="error" size={18} color="#FF3672" />
                </button>
             }
+            {hasCannibalization && (
+               <span className={cannibalBadgeClass}>
+                  <Icon type='error' size={12} color='#DC2626' classes='mr-1 top-[1px]' />
+                  Canibalización
+               </span>
+            )}
          </div>
 
          <div

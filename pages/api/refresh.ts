@@ -15,7 +15,7 @@ type KeywordsRefreshRes = {
 
 type KeywordSearchResultRes = {
    searchResult?: {
-      results: { title: string, url: string, position: number }[],
+      results: { title: string, url: string, position: number, matchesDomain?: boolean }[],
       keyword: string,
       position: number,
       country: string,

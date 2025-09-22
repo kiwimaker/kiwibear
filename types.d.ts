@@ -36,6 +36,7 @@ type KeywordType = {
    sticky: boolean,
    history: KeywordHistory,
    lastResult: KeywordLastResult[],
+   domainMatches?: number,
    url: string,
    tags: string[],
    updating: boolean,
@@ -48,7 +49,8 @@ type KeywordType = {
 type KeywordLastResult = {
    position: number,
    url: string,
-   title: string
+   title: string,
+   matchesDomain?: boolean
 }
 
 type KeywordFilters = {

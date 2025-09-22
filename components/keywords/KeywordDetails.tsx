@@ -20,7 +20,12 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
    const searchResultFound = useRef<HTMLDivElement>(null);
    const { data: keywordData } = useFetchSingleKeyword(keyword.ID);
    const keywordHistory: KeywordHistory = keywordData?.history || keyword.history;
-   const keywordSearchResult: KeywordLastResult = keywordData?.searchResult || keyword.history;
+   const keywordSearchResult: KeywordLastResult[] = keywordData?.searchResult || keyword.lastResult;
+   const domainMatches = useMemo(() => {
+      if (!Array.isArray(keywordSearchResult)) { return []; }
+      return keywordSearchResult.filter((item) => item?.matchesDomain);
+   }, [keywordSearchResult]);
+   const hasCannibalization = domainMatches.length > 1;
    const dateOptions = [
       { label: 'Last 7 Days', value: '7' },
       { label: 'Last 30 Days', value: '30' },
@@ -102,21 +107,33 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
                         <span className=' text-xs text-gray-500'>{dayjs(updatedDate).format('MMMM D, YYYY')}</span>
                      </div>
                      <div className='keywordDetails__section__results styled-scrollbar overflow-y-auto' ref={searchResultContainer}>
+                        {hasCannibalization && (
+                           <div className='leading-6 mb-4 mr-3 p-3 text-sm rounded border border-rose-200 bg-rose-50 text-rose-700'>
+                              Se detectaron {domainMatches.length} resultados de tu dominio. Revisa posibles canibalizaciones entre páginas.
+                           </div>
+                        )}
                         {keywordSearchResult && Array.isArray(keywordSearchResult) && keywordSearchResult.length > 0 && (
                            keywordSearchResult.map((item, index) => {
                               const { position } = keyword;
-                              const domainExist = position < 100 && index === (position - 1);
+                              const isDomainMatch = !!item.matchesDomain;
+                              const isPrimaryMatch = position < 100 && index === (position - 1) && isDomainMatch;
+                              const isCannibalMatch = isDomainMatch && !isPrimaryMatch;
+                              const domainExist = isPrimaryMatch;
                               return (
                                  <div
                                  ref={domainExist ? searchResultFound : null}
                                  className={`leading-6 mb-4 mr-3 p-3 text-sm break-all pr-3 rounded 
-                                 ${domainExist ? ' bg-amber-50 border border-amber-200' : ''}`}
+                                 ${isPrimaryMatch ? ' bg-amber-50 border border-amber-200' : ''}
+                                 ${isCannibalMatch ? ' border border-rose-200 bg-rose-50' : ''}`}
                                  key={item.url + item.position}>
                                     <h4 className='font-semibold text-blue-700'>
                                        <a href={item.url} target="_blank" rel='noreferrer'>{`${index + 1}. ${item.title}`}</a>
                                     </h4>
                                     {/* <p>{item.description}</p> */}
                                     <a className=' text-green-900' href={item.url} target="_blank" rel='noreferrer'>{item.url}</a>
+                                    {isCannibalMatch && (
+                                       <p className='text-xs text-rose-600 mt-1 font-semibold'>Coincidencia adicional del dominio</p>
+                                    )}
                                  </div>
                               );
                            })

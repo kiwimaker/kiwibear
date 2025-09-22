@@ -9,6 +9,7 @@ type SearchResult = {
    title: string,
    url: string,
    position: number,
+   matchesDomain?: boolean,
 }
 
 type SERPObject = {
@@ -115,9 +116,10 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
       const scrapeResult:string = (res.data || res.html || res.results || scraperResult || '');
       if (res && scrapeResult) {
          const extracted = scraperObj?.serpExtractor ? scraperObj.serpExtractor(scrapeResult) : extractScrapedResult(scrapeResult, keyword.device);
+         const annotatedResults = addDomainMatchFlag(extracted, keyword.domain);
          // await writeFile('result.txt', JSON.stringify(scrapeResult), { encoding: 'utf-8' }).catch((err) => { console.log(err); });
-         const serp = getSerp(keyword.domain, extracted);
-         refreshedResults = { ID: keyword.ID, keyword: keyword.keyword, position: serp.postion, url: serp.url, result: extracted, error: false };
+         const serp = getSerp(keyword.domain, annotatedResults);
+         refreshedResults = { ID: keyword.ID, keyword: keyword.keyword, position: serp.postion, url: serp.url, result: annotatedResults, error: false };
          console.log('[SERP]: ', keyword.keyword, serp.postion, serp.url);
       } else {
          scraperError = res.detail || res.error || 'Unknown Error';
@@ -205,17 +207,47 @@ export const extractScrapedResult = (content: string, device: string): SearchRes
  */
 export const getSerp = (domainURL:string, result:SearchResult[]) : SERPObject => {
    if (result.length === 0 || !domainURL) { return { postion: 0, url: '' }; }
-   const URLToFind = new URL(domainURL.includes('https://') ? domainURL : `https://${domainURL}`);
-   const theURL = URLToFind.hostname + URLToFind.pathname;
-   const isURL = URLToFind.pathname !== '/';
-   const foundItem = result.find((item) => {
-      const itemURL = new URL(item.url.includes('https://') ? item.url : `https://${item.url}`);
-      if (isURL && `${theURL}/` === itemURL.hostname + itemURL.pathname) {
+   const foundItem = result.find((item) => matchesDomain(domainURL, item.url));
+   return { postion: foundItem ? foundItem.position : 0, url: foundItem && foundItem.url ? foundItem.url : '' };
+};
+
+const ensureProtocol = (value: string): string => {
+   if (!value) { return ''; }
+   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+};
+
+const normalizeHost = (host: string): string => host.replace(/^www\./, '').toLowerCase();
+
+const normalizePath = (path: string): string => {
+   if (!path || path === '/') { return '/'; }
+   return path.endsWith('/') ? path : `${path}/`;
+};
+
+export const matchesDomain = (domainURL: string, resultURL: string): boolean => {
+   if (!domainURL || !resultURL) { return false; }
+   try {
+      const target = new URL(ensureProtocol(domainURL));
+      const candidate = new URL(ensureProtocol(resultURL));
+      const hostMatches = normalizeHost(target.hostname) === normalizeHost(candidate.hostname);
+      if (!hostMatches) { return false; }
+      const targetPath = normalizePath(target.pathname);
+      if (targetPath === '/') {
          return true;
       }
-      return URLToFind.hostname === itemURL.hostname;
-   });
-   return { postion: foundItem ? foundItem.position : 0, url: foundItem && foundItem.url ? foundItem.url : '' };
+      const candidatePath = normalizePath(candidate.pathname);
+      return targetPath === candidatePath;
+   } catch (error) {
+      console.log('[WARN] Failed to compare domain URLs', error);
+      return false;
+   }
+};
+
+const addDomainMatchFlag = (results: SearchResult[], domainURL: string): SearchResult[] => {
+   if (!domainURL || !Array.isArray(results)) { return results; }
+   return results.map((item) => ({
+      ...item,
+      matchesDomain: matchesDomain(domainURL, item.url),
+   }));
 };
 
 /**

@@ -27,6 +27,7 @@ type KeywordOrderModalProps = {
 const KeywordOrderModal = ({ keywords, device, closeModal, isSaving, onSave }: KeywordOrderModalProps) => {
    const sortedKeywords = useMemo(() => sortKeywordsByOrder(keywords), [keywords]);
    const [orderedKeywords, setOrderedKeywords] = useState<KeywordType[]>(sortedKeywords);
+   const [dragIndex, setDragIndex] = useState<number|null>(null);
 
    useEffect(() => {
       setOrderedKeywords(sortedKeywords);
@@ -40,6 +41,30 @@ const KeywordOrderModal = ({ keywords, device, closeModal, isSaving, onSave }: K
          updated.splice(targetIndex, 0, item);
          return updated;
       });
+   };
+
+   const handleDragStart = (event: React.DragEvent<HTMLDivElement>, index: number) => {
+      const { dataTransfer } = event;
+      if (dataTransfer) {
+         dataTransfer.effectAllowed = 'move';
+      }
+      setDragIndex(index);
+   };
+
+   const handleDragEnter = (index: number) => {
+      if (dragIndex === null || dragIndex === index) { return; }
+      setOrderedKeywords((prev) => {
+         if (index < 0 || index >= prev.length) { return prev; }
+         const updated = [...prev];
+         const [item] = updated.splice(dragIndex, 1);
+         updated.splice(index, 0, item);
+         return updated;
+      });
+      setDragIndex(index);
+   };
+
+   const handleDragEnd = () => {
+      setDragIndex(null);
    };
 
    const resetOrder = () => {
@@ -69,14 +94,28 @@ const KeywordOrderModal = ({ keywords, device, closeModal, isSaving, onSave }: K
          closeModal={() => closeModal()}
          width='[680px]'>
          <div className='text-sm text-gray-600'>
-            <p className='mb-4'>Utiliza las flechas para definir el orden en que aparecerán tus keywords.</p>
+            <p className='mb-4'>Arrastra los elementos o usa las flechas para definir el orden en que aparecerán tus keywords.</p>
             <div className='border rounded-lg max-h-[460px] overflow-y-auto styled-scrollbar'>
                {orderedKeywords.map((keyword, index) => {
                   const highlightClass = keyword.device === device ? 'bg-indigo-50' : 'bg-white';
+                  const draggingClass = dragIndex === index ? 'border-indigo-300 shadow-sm' : '';
+                  const itemClasses = [
+                     'grid grid-cols-[40px_1fr_auto] items-center border-b last:border-b-0 px-4 py-1.5 select-none cursor-move',
+                     highlightClass,
+                     draggingClass,
+                  ].join(' ');
                   return (
                      <div
                         key={keyword.ID}
-                        className={`grid grid-cols-[40px_1fr_auto] items-center border-b last:border-b-0 px-4 py-1.5 ${highlightClass}`}>
+                        className={itemClasses}
+                        draggable
+                        onDragStart={(event) => handleDragStart(event, index)}
+                        onDragEnter={() => handleDragEnter(index)}
+                        onDragOver={(event) => event.preventDefault()}
+                        onDragEnd={handleDragEnd}
+                        role='listitem'
+                        aria-grabbed={dragIndex === index}
+                     >
                         <span className='text-center font-semibold text-gray-500'>{index + 1}</span>
                         <div className='overflow-hidden pr-4'>
                            <p className='font-semibold text-gray-700 truncate'>{keyword.keyword}{keyword.city ? ` (${keyword.city})` : ''}</p>

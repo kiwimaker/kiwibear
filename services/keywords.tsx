@@ -134,6 +134,32 @@ export function useUpdateKeywordTags(onSuccess:Function) {
    });
 }
 
+export function useUpdateKeywordOrder(onSuccess:Function) {
+   const queryClient = useQueryClient();
+   return useMutation(async (sortOrder: { [id:number]: number }) => {
+      const headers = new Headers({ 'Content-Type': 'application/json', Accept: 'application/json' });
+      const fetchOpts = { method: 'PUT', headers, body: JSON.stringify({ sortOrder }) };
+      const res = await fetch(`${window.location.origin}/api/keywords-order`, fetchOpts);
+      const payload = await res.json().catch(() => ({}));
+      if (res.status >= 400 && res.status < 600) {
+         const message = payload?.error || 'Bad response from server';
+         throw new Error(message);
+      }
+      return payload;
+   }, {
+      onSuccess: async () => {
+         onSuccess();
+         toast('Orden de keywords actualizado', { icon: '✔️' });
+         queryClient.invalidateQueries(['keywords']);
+      },
+      onError: (error: any) => {
+         console.log('Error Updating Keyword Order!!!');
+         const message = error?.message || 'Error actualizando el orden.';
+         toast(message, { icon: '⚠️' });
+      },
+   });
+}
+
 export function useRefreshKeywords(onSuccess:Function) {
    const queryClient = useQueryClient();
    return useMutation(async ({ ids = [], domain = '' } : {ids?: number[], domain?: string}) => {

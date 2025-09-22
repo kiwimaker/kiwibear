@@ -16,7 +16,9 @@ type KeywordFilterProps = {
    isConsole?: boolean,
    SCcountries?: string[];
    updateColumns?: Function,
-   tableColumns?: string[]
+   tableColumns?: string[],
+   onCustomOrder?: Function,
+   supportsCustomOrder?: boolean
 }
 
 const KeywordFilters = (props: KeywordFilterProps) => {
@@ -34,6 +36,8 @@ const KeywordFilters = (props: KeywordFilterProps) => {
       updateColumns,
       SCcountries = [],
       tableColumns = [],
+      onCustomOrder,
+      supportsCustomOrder = false,
     } = props;
    const [sortOptions, showSortOptions] = useState(false);
    const [filterOptions, showFilterOptions] = useState(false);
@@ -82,7 +86,11 @@ const KeywordFilters = (props: KeywordFilterProps) => {
       return optionObject;
    }, [SCcountries, isConsole, keywords]);
 
-   const sortOptionChoices: SelectionOption[] = [
+   const sortOptionChoices: SelectionOption[] = [];
+   if (supportsCustomOrder) {
+      sortOptionChoices.push({ value: 'custom', label: 'Orden personalizado' });
+   }
+   sortOptionChoices.push(
       { value: 'pos_asc', label: 'Top Position' },
       { value: 'pos_desc', label: 'Lowest Position' },
       { value: 'date_asc', label: 'Most Recent (Default)' },
@@ -91,7 +99,7 @@ const KeywordFilters = (props: KeywordFilterProps) => {
       { value: 'alpha_desc', label: 'Alphabetically(Z-A)' },
       { value: 'vol_asc', label: 'Lowest Search Volume' },
       { value: 'vol_desc', label: 'Highest Search Volume' },
-   ];
+   );
 
    const columnOptionChoices: {label: string, value: string, locked: boolean}[] = [
       { value: 'Keyword', label: 'Keyword', locked: true },
@@ -153,7 +161,7 @@ const KeywordFilters = (props: KeywordFilterProps) => {
                   <Icon type="filter" size={18} />
                </button>
             </div>
-            <div className={`lg:flex gap-5 lg:visible ${filterOptions ? mobileFilterOptionsStyle : 'hidden'}`}>
+           <div className={`lg:flex gap-5 lg:visible ${filterOptions ? mobileFilterOptionsStyle : 'hidden'}`}>
                <div className={'country_filter mb-2 lg:mb-0'}>
                   <SelectField
                      selected={filterParams.countries}
@@ -185,7 +193,15 @@ const KeywordFilters = (props: KeywordFilterProps) => {
                   />
                </div>
             </div>
-               <div className='relative'>
+              <div className='relative'>
+                  {onCustomOrder && supportsCustomOrder && (
+                     <button
+                     className='px-2 py-1 mr-2 rounded'
+                     title='Editar orden personalizado'
+                     onClick={() => onCustomOrder()}>
+                        <Icon type='menu' size={18} />
+                     </button>
+                  )}
                   <button
                   data-testid="sort_button"
                   className={`px-2 py-1 rounded ${sortOptions ? ' bg-indigo-100 text-blue-700' : ''}`}

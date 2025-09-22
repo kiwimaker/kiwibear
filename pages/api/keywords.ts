@@ -9,6 +9,7 @@ import { integrateKeywordSCData, readLocalSCData } from '../../utils/searchConso
 import refreshAndUpdateKeywords from '../../utils/refresh';
 import { getKeywordsVolume, updateKeywordsVolumeData } from '../../utils/adwords';
 import { getHistoryPosition, getHistoryUrl, sortHistoryByDate } from '../../utils/history';
+import { isKeywordSortOrderSupported } from '../../utils/keywordSortOrder';
 
 type KeywordsGetResponse = {
    keywords?: KeywordType[],
@@ -54,7 +55,15 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
    const domainSCData = integratedSC || (search_console_client_email && search_console_private_key) ? await readLocalSCData(domain) : false;
 
    try {
-      const allKeywords:Keyword[] = await Keyword.findAll({ where: { domain } });
+      const supportsSortOrder = await isKeywordSortOrderSupported();
+      const findQuery: any = { where: { domain } };
+      if (supportsSortOrder && Keyword.sequelize) {
+         const literalOrder = Keyword.sequelize.literal('CASE WHEN sort_order IS NULL THEN 999999 ELSE sort_order END');
+         findQuery.order = [[literalOrder, 'ASC'], ['added', 'DESC']];
+      } else {
+         findQuery.order = [['added', 'DESC']];
+      }
+      const allKeywords:Keyword[] = await Keyword.findAll(findQuery);
       const keywords: KeywordType[] = parseKeywords(allKeywords.map((e) => e.get({ plain: true })));
       const processedKeywords = keywords.map((keyword) => {
          const historySorted = sortHistoryByDate(keyword.history);
@@ -77,7 +86,7 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
          const finalKeyword = domainSCData ? integrateKeywordSCData(keywordWithSlimHistory, domainSCData) : keywordWithSlimHistory;
          return finalKeyword;
       });
-      return res.status(200).json({ keywords: processedKeywords });
+      return res.status(200).json({ keywords: processedKeywords, sortOrderSupported: supportsSortOrder });
    } catch (error) {
       console.log('[ERROR] Getting Domain Keywords for ', domain, error);
       return res.status(400).json({ error: 'Error Loading Keywords for this Domain.' });
@@ -87,14 +96,24 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
 const addKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGetResponse>) => {
    const { keywords } = req.body;
    if (keywords && Array.isArray(keywords) && keywords.length > 0) {
-      // const keywordsArray = keywords.replaceAll('\n', ',').split(',').map((item:string) => item.trim());
-      const keywordsToAdd: any = []; // QuickFIX for bug: https://github.com/sequelize/sequelize-typescript/issues/936
+      const keywordsToAdd: any[] = []; // QuickFIX for bug: https://github.com/sequelize/sequelize-typescript/issues/936
+      const supportsSortOrder = await isKeywordSortOrderSupported();
+      const domainOrderCounters: Record<string, number> = {};
 
-      keywords.forEach((kwrd: KeywordAddPayload) => {
+      if (supportsSortOrder) {
+         const uniqueDomains = Array.from(new Set((keywords as KeywordAddPayload[]).map((item) => item.domain)));
+         for (const domainName of uniqueDomains) {
+            const maxOrder: number|null = await Keyword.max('sort_order', { where: { domain: domainName } });
+            const parsedMax = typeof maxOrder === 'number' && Number.isFinite(maxOrder) ? maxOrder : 0;
+            domainOrderCounters[domainName] = parsedMax;
+         }
+      }
+
+      for (const kwrd of keywords as KeywordAddPayload[]) {
          const { keyword, device, country, domain, tags, city, fetchTop20 } = kwrd;
          const tagsArray = tags ? tags.split(',').map((item:string) => item.trim()) : [];
          const keywordSettings = fetchTop20 ? { fetchTop20: true } : undefined;
-         const newKeyword = {
+         const newKeyword: any = {
             keyword,
             device,
             domain,
@@ -110,8 +129,13 @@ const addKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
             added: new Date().toJSON(),
             settings: keywordSettings ? JSON.stringify(keywordSettings) : null,
          };
+         if (supportsSortOrder) {
+            const nextSortOrder = (domainOrderCounters[domain] || 0) + 1;
+            domainOrderCounters[domain] = nextSortOrder;
+            newKeyword.sort_order = nextSortOrder;
+         }
          keywordsToAdd.push(newKeyword);
-      });
+      }
 
       try {
          const newKeywords:Keyword[] = await Keyword.bulkCreate(keywordsToAdd);

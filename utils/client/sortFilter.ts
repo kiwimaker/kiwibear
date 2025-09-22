@@ -7,12 +7,29 @@
 export const sortKeywords = (theKeywords:KeywordType[], sortBy:string, scDataType?: string) : KeywordType[] => {
    let sortedItems: KeywordType[] = [];
    const keywords = theKeywords.map((k) => ({ ...k, position: k.position === 0 ? 111 : k.position }));
+   const keywordsClone = [...theKeywords];
    switch (sortBy) {
+      case 'custom':
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => {
+               const orderA = typeof a.sortOrder === 'number' && Number.isFinite(a.sortOrder)
+                  ? a.sortOrder
+                  : Number.MAX_SAFE_INTEGER;
+               const orderB = typeof b.sortOrder === 'number' && Number.isFinite(b.sortOrder)
+                  ? b.sortOrder
+                  : Number.MAX_SAFE_INTEGER;
+               if (orderA !== orderB) {
+                  return orderA - orderB;
+               }
+               const addedA = new Date(a.added).getTime();
+               const addedB = new Date(b.added).getTime();
+               return addedA - addedB;
+            });
+            break;
       case 'date_asc':
-            sortedItems = theKeywords.sort((a: KeywordType, b: KeywordType) => new Date(b.added).getTime() - new Date(a.added).getTime());
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => new Date(b.added).getTime() - new Date(a.added).getTime());
             break;
       case 'date_desc':
-            sortedItems = theKeywords.sort((a: KeywordType, b: KeywordType) => new Date(a.added).getTime() - new Date(b.added).getTime());
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => new Date(a.added).getTime() - new Date(b.added).getTime());
             break;
       case 'pos_asc':
             sortedItems = keywords.sort((a: KeywordType, b: KeywordType) => (b.position > a.position ? 1 : -1));
@@ -23,16 +40,16 @@ export const sortKeywords = (theKeywords:KeywordType[], sortBy:string, scDataTyp
             sortedItems = sortedItems.map((k) => ({ ...k, position: k.position === 111 ? 0 : k.position }));
             break;
       case 'alpha_asc':
-            sortedItems = theKeywords.sort((a: KeywordType, b: KeywordType) => (b.keyword > a.keyword ? 1 : -1));
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => (b.keyword > a.keyword ? 1 : -1));
             break;
       case 'alpha_desc':
-            sortedItems = theKeywords.sort((a: KeywordType, b: KeywordType) => (a.keyword > b.keyword ? 1 : -1));
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => (a.keyword > b.keyword ? 1 : -1));
          break;
       case 'vol_asc':
-            sortedItems = theKeywords.sort((a: KeywordType, b: KeywordType) => (b.volume - a.volume));
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => (b.volume - a.volume));
             break;
       case 'vol_desc':
-            sortedItems = theKeywords.sort((a: KeywordType, b: KeywordType) => (a.volume - b.volume));
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => (a.volume - b.volume));
             break;
       case 'imp_desc':
             if (scDataType) {
@@ -75,7 +92,9 @@ export const sortKeywords = (theKeywords:KeywordType[], sortBy:string, scDataTyp
    }
 
    // Stick Favorites item to top
-   sortedItems = sortedItems.sort((a: KeywordType, b: KeywordType) => (b.sticky > a.sticky ? 1 : -1));
+   if (sortBy !== 'custom') {
+      sortedItems = sortedItems.sort((a: KeywordType, b: KeywordType) => (b.sticky > a.sticky ? 1 : -1));
+   }
 
    return sortedItems;
 };

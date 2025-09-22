@@ -7,9 +7,10 @@ import Keyword from './Keyword';
 import KeywordDetails from './KeywordDetails';
 import KeywordFilters from './KeywordFilter';
 import Modal from '../common/Modal';
-import { useDeleteKeywords, useFavKeywords, useRefreshKeywords } from '../../services/keywords';
+import { useDeleteKeywords, useFavKeywords, useRefreshKeywords, useUpdateKeywordOrder } from '../../services/keywords';
 import KeywordTagManager from './KeywordTagManager';
 import AddTags from './AddTags';
+import KeywordOrderModal from './KeywordOrderModal';
 import useWindowResize from '../../hooks/useWindowResize';
 import useIsMobile from '../../hooks/useIsMobile';
 import { useUpdateSettings } from '../../services/settings';
@@ -22,12 +23,13 @@ type KeywordsTableProps = {
    showAddModal: boolean,
    setShowAddModal: Function,
    isConsoleIntegrated: boolean,
-   settings?: SettingsType
+   settings?: SettingsType,
+   supportsCustomOrder?: boolean
 }
 
 const KeywordsTable = (props: KeywordsTableProps) => {
    const titleColumnRef = useRef(null);
-   const { keywords = [], isLoading = true, isConsoleIntegrated = false, settings } = props;
+   const { keywords = [], isLoading = true, isConsoleIntegrated = false, settings, supportsCustomOrder = false } = props;
    const showSCData = isConsoleIntegrated;
    const [device, setDevice] = useState<string>('desktop');
    const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
@@ -35,6 +37,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    const [showRemoveModal, setShowRemoveModal] = useState<boolean>(false);
    const [showTagManager, setShowTagManager] = useState<null|number>(null);
    const [showAddTags, setShowAddTags] = useState<boolean>(false);
+   const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
    const [SCListHeight, setSCListHeight] = useState(500);
    const [filterParams, setFilterParams] = useState<KeywordFilters>({ countries: [], tags: [], search: '' });
    const [sortBy, setSortBy] = useState<string>('date_asc');
@@ -44,6 +47,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    const { mutate: deleteMutate } = useDeleteKeywords(() => {});
    const { mutate: favoriteMutate } = useFavKeywords(() => {});
    const { mutate: refreshMutate } = useRefreshKeywords(() => {});
+   const { mutate: updateOrderMutate, isLoading: isUpdatingOrder } = useUpdateKeywordOrder(() => setShowOrderModal(false));
    const [isMobile] = useIsMobile();
 
    useWindowResize(() => {
@@ -58,6 +62,20 @@ const KeywordsTable = (props: KeywordsTableProps) => {
          setMaxTitleColumnWidth((titleColumnRef.current as HTMLElement).clientWidth);
       }
    }, [titleColumnRef]);
+
+   useEffect(() => {
+      if (supportsCustomOrder
+         && sortBy === 'date_asc'
+         && keywords.some((item) => typeof item.sortOrder === 'number' && item.sortOrder !== null)) {
+         setSortBy('custom');
+      }
+   }, [keywords, sortBy, supportsCustomOrder]);
+
+   useEffect(() => {
+      if (!supportsCustomOrder && sortBy === 'custom') {
+         setSortBy('date_asc');
+      }
+   }, [supportsCustomOrder, sortBy]);
 
    const tableColumns = settings?.keywordsColumns || ['Best', 'History', 'Volume', 'Search Console'];
    const { mutate: updateMutate, isLoading: isUpdatingSettings } = useUpdateSettings(() => console.log(''));
@@ -171,6 +189,8 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                   updateColumns={updateColumns}
                   tableColumns={tableColumns}
                   integratedConsole={isConsoleIntegrated}
+                  onCustomOrder={supportsCustomOrder ? (() => setShowOrderModal(true)) : undefined}
+                  supportsCustomOrder={supportsCustomOrder}
                />
             )}
             <div className={`domkeywordsTable domkeywordsTable--keywords 
@@ -295,6 +315,15 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                keywords={keywords.filter((k) => selectedKeywords.includes(k.ID))}
                closeModal={() => setShowAddTags(false)}
                />
+         )}
+         {supportsCustomOrder && showOrderModal && (
+            <KeywordOrderModal
+               closeModal={() => setShowOrderModal(false)}
+               keywords={keywords}
+               device={device}
+               isSaving={isUpdatingOrder}
+               onSave={(orderMap: { [id:number]: number }) => updateOrderMutate(orderMap)}
+            />
          )}
          <Toaster position='bottom-center' containerClassName="react_toaster" />
       </div>

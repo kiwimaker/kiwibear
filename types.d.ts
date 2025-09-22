@@ -55,6 +55,7 @@ type KeywordType = {
    uid?: string
    city?: string
    settings?: KeywordCustomSettings
+   sortOrder?: number|null
 }
 
 type KeywordLastResult = {

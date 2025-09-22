@@ -47,6 +47,7 @@ const parseKeywords = (allKeywords: (Keyword|any)[]) : KeywordType[] => {
          lastResult: parsedLastResult,
          lastUpdateError: parsedLastUpdateError,
          settings: parseKeywordSettings(keywrd.settings),
+         sortOrder: typeof keywrd.sort_order === 'number' ? keywrd.sort_order : null,
       };
    });
    return parsedItems;

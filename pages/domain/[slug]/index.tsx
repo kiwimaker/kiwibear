@@ -45,7 +45,8 @@ const SingleDomain: NextPage = () => {
 
    const { keywordsData, keywordsLoading } = useFetchKeywords(router, activDomain?.domain || '', setKeywordSPollInterval, keywordSPollInterval);
    const theDomains: DomainType[] = (domainsData && domainsData.domains) || [];
-   const theKeywords: KeywordType[] = keywordsData && keywordsData.keywords;
+   const theKeywords: KeywordType[] = (keywordsData && keywordsData.keywords) || [];
+   const supportsCustomOrder = !!(keywordsData && keywordsData.sortOrderSupported);
 
    return (
       <div className="Domain ">
@@ -77,6 +78,7 @@ const SingleDomain: NextPage = () => {
                isLoading={keywordsLoading}
                domain={activDomain}
                keywords={theKeywords}
+               supportsCustomOrder={supportsCustomOrder}
                showAddModal={showAddKeywords}
                setShowAddModal={setShowAddKeywords}
                isConsoleIntegrated={!!(appSettings && appSettings.search_console_integrated) || domainHasScAPI }

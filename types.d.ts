@@ -19,8 +19,13 @@ type DomainType = {
    ideas_settings?: string,
 }
 
+type KeywordHistoryEntry = {
+   position: number,
+   url?: string,
+}
+
 type KeywordHistory = {
-   [date:string] : number
+   [date:string] : KeywordHistoryEntry
 }
 
 type KeywordType = {

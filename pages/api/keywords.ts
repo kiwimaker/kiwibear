@@ -8,6 +8,7 @@ import parseKeywords from '../../utils/parseKeywords';
 import { integrateKeywordSCData, readLocalSCData } from '../../utils/searchConsole';
 import refreshAndUpdateKeywords from '../../utils/refresh';
 import { getKeywordsVolume, updateKeywordsVolumeData } from '../../utils/adwords';
+import { getHistoryPosition, getHistoryUrl, sortHistoryByDate } from '../../utils/history';
 
 type KeywordsGetResponse = {
    keywords?: KeywordType[],
@@ -56,14 +57,14 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
       const allKeywords:Keyword[] = await Keyword.findAll({ where: { domain } });
       const keywords: KeywordType[] = parseKeywords(allKeywords.map((e) => e.get({ plain: true })));
       const processedKeywords = keywords.map((keyword) => {
-         const historyArray = Object.keys(keyword.history).map((dateKey:string) => ({
-            date: new Date(dateKey).getTime(),
-            dateRaw: dateKey,
-            position: keyword.history[dateKey],
-         }));
-         const historySorted = historyArray.sort((a, b) => a.date - b.date);
+         const historySorted = sortHistoryByDate(keyword.history);
          const lastWeekHistory :KeywordHistory = {};
-         historySorted.slice(-7).forEach((x:any) => { lastWeekHistory[x.dateRaw] = x.position; });
+         historySorted.slice(-7).forEach((item) => {
+            const { date, entry } = item;
+            const position = getHistoryPosition(entry);
+            const url = getHistoryUrl(entry);
+            lastWeekHistory[date] = url ? { position, url } : { position };
+         });
          const domainMatches = Array.isArray(keyword.lastResult)
             ? keyword.lastResult.filter((item) => item?.matchesDomain).length
             : 0;

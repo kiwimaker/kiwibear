@@ -3,6 +3,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { getKeywordsInsight, getPagesInsight } from './insight';
 import { readLocalSCData } from './searchConsole';
+import { getHistoryPosition } from './history';
 
 const serpBearLogo = 'https://serpbear.b-cdn.net/ikAdjQq.png';
 const mobileIcon = 'https://serpbear.b-cdn.net/SqXD9rd.png';
@@ -56,7 +57,7 @@ const getPositionChange = (history:KeywordHistory, position:number) : number => 
       const historyArray = Object.keys(history).map((dateKey) => ({
                date: new Date(dateKey).getTime(),
                dateRaw: dateKey,
-               position: history[dateKey],
+               position: getHistoryPosition(history[dateKey]),
             }));
       const historySorted = historyArray.sort((a, b) => a.date - b.date);
       const previousPos = historySorted[historySorted.length - 2].position;
@@ -71,7 +72,7 @@ const getPositionChange = (history:KeywordHistory, position:number) : number => 
 const getBestKeywordPosition = (history: KeywordHistory) => {
    let bestPos;
    if (Object.keys(history).length > 0) {
-      const historyArray = Object.keys(history).map((itemID) => ({ date: itemID, position: history[itemID] }))
+      const historyArray = Object.keys(history).map((itemID) => ({ date: itemID, position: getHistoryPosition(history[itemID]) }))
           .sort((a, b) => a.position - b.position).filter((el) => (el.position > 0));
       if (historyArray[0]) {
          bestPos = { ...historyArray[0] };

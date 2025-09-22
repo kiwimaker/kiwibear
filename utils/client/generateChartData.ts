@@ -1,3 +1,5 @@
+import { getHistoryPosition } from '../history';
+
 type ChartData = {
    labels: string[],
    sreies: number[]
@@ -17,9 +19,9 @@ export const generateChartData = (history: KeywordHistory): ChartData => {
       // Then Generate Series. if past date's serp does not exist, use 0.
       // If have a missing serp in between dates, use the previous date's serp to fill the gap.
       const pastDateKey = `${pastDate.getFullYear()}-${pastDate.getMonth() + 1}-${pastDate.getDate()}`;
-      const serpOftheDate = history[pastDateKey];
+      const serpOftheDate = getHistoryPosition(history[pastDateKey]);
       const lastLargestSerp = lastFoundSerp > 0 ? lastFoundSerp : 0;
-      seriesDates[pastDateKey] = history[pastDateKey] ? history[pastDateKey] : lastLargestSerp;
+      seriesDates[pastDateKey] = serpOftheDate || lastLargestSerp;
       if (lastFoundSerp < serpOftheDate) { lastFoundSerp = serpOftheDate; }
    }
 
@@ -32,7 +34,7 @@ export const generateTheChartData = (history: KeywordHistory, time:string = '30'
 
    if (time === 'all') {
       Object.keys(history).forEach((dateKey) => {
-         const serpVal = history[dateKey] ? history[dateKey] : 111;
+         const serpVal = getHistoryPosition(history[dateKey]) || 111;
          chartData.labels.push(dateKey);
          chartData.sreies.push(serpVal);
       });
@@ -43,7 +45,7 @@ export const generateTheChartData = (history: KeywordHistory, time:string = '30'
          // Then Generate Series. if past date's serp does not exist, use 0.
          // If have a missing serp in between dates, use the previous date's serp to fill the gap.
          const pastDateKey = `${pastDate.getFullYear()}-${pastDate.getMonth() + 1}-${pastDate.getDate()}`;
-         const prevSerp = history[pastDateKey];
+         const prevSerp = getHistoryPosition(history[pastDateKey]);
          const serpVal = prevSerp || (lastFoundSerp > 0 ? lastFoundSerp : 111);
          if (serpVal !== 0) { lastFoundSerp = prevSerp; }
          chartData.labels.push(pastDateKey);

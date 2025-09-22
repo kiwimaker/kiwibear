@@ -1,6 +1,7 @@
 import { performance } from 'perf_hooks';
 import { setTimeout as sleep } from 'timers/promises';
 import { RefreshResult, removeFromRetryQueue, retryScrape, scrapeKeywordFromGoogle } from './scraper';
+import { setHistoryEntry } from './history';
 import parseKeywords from './parseKeywords';
 import Keyword from '../database/models/keyword';
 
@@ -75,7 +76,7 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
          const { history } = keyword;
          const theDate = new Date();
          const dateKey = `${theDate.getFullYear()}-${theDate.getMonth() + 1}-${theDate.getDate()}`;
-         history[dateKey] = newPos;
+         setHistoryEntry(history, dateKey, newPos, udpatedkeyword.url);
 
          const updatedVal = {
             position: newPos,

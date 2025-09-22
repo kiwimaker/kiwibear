@@ -7,6 +7,7 @@ import SelectField from '../common/SelectField';
 import { useFetchSingleKeyword } from '../../services/keywords';
 import useOnKey from '../../hooks/useOnKey';
 import { generateTheChartData } from '../../utils/client/generateChartData';
+import { getHistoryUrl } from '../../utils/history';
 
 type KeywordDetailsProps = {
    keyword: KeywordType,
@@ -50,6 +51,15 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
       return generateTheChartData(keywordHistory, chartTime);
    }, [keywordHistory, chartTime]);
 
+   const chartTooltipMap = useMemo(() => {
+      const tooltipMap: Record<string, string> = {};
+      chartData.labels.forEach((label) => {
+         const url = getHistoryUrl(keywordHistory[label]);
+         if (url) { tooltipMap[label] = url; }
+      });
+      return tooltipMap;
+   }, [chartData.labels, keywordHistory]);
+
    const closeOnBGClick = (e:React.SyntheticEvent) => {
       e.stopPropagation();
       e.nativeEvent.stopImmediatePropagation();
@@ -91,7 +101,7 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
                         </div>
                      </div>
                      <div className='keywordDetails__section__chart h-64'>
-                           <Chart labels={chartData.labels} sreies={chartData.sreies} />
+                           <Chart labels={chartData.labels} sreies={chartData.sreies} tooltipData={chartTooltipMap} />
                      </div>
                   </div>
                   <div className='keywordDetails__section mt-10'>

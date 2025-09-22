@@ -8,10 +8,11 @@ type ChartProps ={
    labels: string[],
    sreies: number[],
    reverse? : boolean,
-   noMaxLimit?: boolean
+   noMaxLimit?: boolean,
+   tooltipData?: Record<string, string>
 }
 
-const Chart = ({ labels, sreies, reverse = true, noMaxLimit = false }:ChartProps) => {
+const Chart = ({ labels, sreies, reverse = true, noMaxLimit = false, tooltipData = {} }:ChartProps) => {
    const options = {
       responsive: true,
       maintainAspectRatio: false,
@@ -26,6 +27,21 @@ const Chart = ({ labels, sreies, reverse = true, noMaxLimit = false }:ChartProps
       plugins: {
          legend: {
              display: false,
+         },
+         tooltip: {
+            callbacks: {
+               label: (context: any) => {
+                  const { parsed, dataIndex } = context;
+                  const position = typeof parsed?.y === 'number' ? parsed.y : 0;
+                  const label = `Posición: ${position}`;
+                  const labelKey = labels[dataIndex];
+                  const url = labelKey ? tooltipData[labelKey] : undefined;
+                  if (url) {
+                     return [label, `URL: ${url}`];
+                  }
+                  return label;
+               },
+            },
          },
      },
    };

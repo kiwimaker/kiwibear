@@ -7,6 +7,7 @@ import ChartSlim from '../common/ChartSlim';
 import KeywordPosition from './KeywordPosition';
 import { generateTheChartData } from '../../utils/client/generateChartData';
 import { formattedNum } from '../../utils/client/helpers';
+import { getHistoryPosition } from '../../utils/history';
 
 type KeywordProps = {
    keywordData: KeywordType,
@@ -76,7 +77,7 @@ const Keyword = (props: KeywordProps) => {
       let status = 0;
       if (Object.keys(history).length >= 2) {
          const historyArray = Object.keys(history).map((dateKey:string) => {
-            return { date: new Date(dateKey).getTime(), dateRaw: dateKey, position: history[dateKey] };
+            return { date: new Date(dateKey).getTime(), dateRaw: dateKey, position: getHistoryPosition(history[dateKey]) };
          });
          const historySorted = historyArray.sort((a, b) => a.date - b.date);
          const previousPos = historySorted[historySorted.length - 2].position;
@@ -91,7 +92,7 @@ const Keyword = (props: KeywordProps) => {
    const bestPosition: false | {position: number, date: string} = useMemo(() => {
       let bestPos;
       if (Object.keys(history).length > 0) {
-         const historyArray = Object.keys(history).map((itemID) => ({ date: itemID, position: history[itemID] }))
+         const historyArray = Object.keys(history).map((itemID) => ({ date: itemID, position: getHistoryPosition(history[itemID]) }))
              .sort((a, b) => a.position - b.position).filter((el) => (el.position > 0));
          if (historyArray[0]) {
             bestPos = { ...historyArray[0] };

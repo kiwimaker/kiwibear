@@ -1,4 +1,5 @@
 import Keyword from '../database/models/keyword';
+import { normalizeHistory } from './history';
 
 /**
  * Parses the SQL Keyword Model object to frontend cosumable object.
@@ -8,7 +9,7 @@ import Keyword from '../database/models/keyword';
 const parseKeywords = (allKeywords: Keyword[]) : KeywordType[] => {
    const parsedItems = allKeywords.map((keywrd:Keyword) => ({
          ...keywrd,
-         history: JSON.parse(keywrd.history),
+         history: normalizeHistory(JSON.parse(keywrd.history)),
          tags: JSON.parse(keywrd.tags),
          lastResult: JSON.parse(keywrd.lastResult),
          lastUpdateError: keywrd.lastUpdateError !== 'false' && keywrd.lastUpdateError.includes('{') ? JSON.parse(keywrd.lastUpdateError) : false,

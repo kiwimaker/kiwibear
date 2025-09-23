@@ -29,6 +29,7 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
    const hasCannibalization = domainMatches.length > 1;
    const competitorSnapshot = useMemo<KeywordCompetitorSnapshot>(() => keyword.competitors || {}, [keyword.competitors]);
    const competitorEntries = useMemo(() => Object.entries(competitorSnapshot), [competitorSnapshot]);
+   const [showCompetitors, setShowCompetitors] = useState(false);
    const formatCompetitorLabel = (value: string) => value.replace(/^https?:\/\/(www\.)?/i, '');
    const dateOptions = [
       { label: 'Last 7 Days', value: '7' },
@@ -91,27 +92,44 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
 
                  <div className='keywordDetails__section'>
                      {competitorEntries.length > 0 && (
-                        <div className='mb-8'>
-                           <h3 className='font-bold text-gray-700 text-lg mb-3'>Competidores</h3>
-                           <ul className='space-y-2 text-sm text-gray-600'>
-                              {competitorEntries.map(([competitorDomain, data]) => (
-                                 <li key={competitorDomain} className='flex justify-between items-center border border-slate-200 rounded px-3 py-2'>
-                                    <span className='font-semibold text-slate-700'>{formatCompetitorLabel(competitorDomain)}</span>
-                                    <span className='text-xs text-slate-500'>
-                                       {data?.position && data.position > 0 ? `Posición #${data.position}` : 'Fuera del top 100'}
-                                       {data?.url && data.url !== '' && (
-                                          <a
-                                             className='ml-2 text-indigo-600 hover:underline'
-                                             href={data.url}
-                                             target='_blank'
-                                             rel='noreferrer'>
-                                             URL
-                                          </a>
-                                       )}
-                                    </span>
-                                 </li>
-                              ))}
-                           </ul>
+                        <div className='mb-8 border border-slate-200 rounded-lg'>
+                           <button
+                              type='button'
+                              className={[
+                                 'w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-slate-700',
+                                 'bg-slate-50 rounded-t-lg',
+                              ].join(' ')}
+                              onClick={() => setShowCompetitors((prev) => !prev)}
+                           >
+                              <span className='flex items-center gap-2'>
+                                 <Icon type='target' size={14} /> Competidores
+                              </span>
+                              <Icon type={showCompetitors ? 'caret-up' : 'caret-down'} size={12} />
+                           </button>
+                           {showCompetitors && (
+                              <ul className='space-y-2 text-sm text-gray-600 px-4 py-3'>
+                                 {competitorEntries.map(([competitorDomain, data]) => (
+                                    <li
+                                       key={competitorDomain}
+                                       className='flex justify-between items-center border border-slate-100 rounded px-3 py-2'
+                                    >
+                                       <span className='font-semibold text-slate-700'>{formatCompetitorLabel(competitorDomain)}</span>
+                                       <span className='text-xs text-slate-500 flex items-center gap-2'>
+                                          {data?.position && data.position > 0 ? `Posición #${data.position}` : 'Fuera del top 100'}
+                                          {data?.url && data.url !== '' && (
+                                             <a
+                                                className='text-indigo-600 hover:underline'
+                                                href={data.url}
+                                                target='_blank'
+                                                rel='noreferrer'>
+                                                URL
+                                             </a>
+                                          )}
+                                       </span>
+                                    </li>
+                                 ))}
+                              </ul>
+                           )}
                         </div>
                      )}
                      <div className="keywordDetails__section__head flex justify-between mb-5">
@@ -127,8 +145,10 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
                            />
                         </div>
                      </div>
-                     <div className='keywordDetails__section__chart h-64'>
+                     <div className='keywordDetails__section__chart' style={{ maxHeight: '225px' }}>
+                           <div className='h-[225px]'>
                            <Chart labels={chartData.labels} sreies={chartData.sreies} tooltipData={chartTooltipMap} />
+                           </div>
                      </div>
                   </div>
                   <div className='keywordDetails__section mt-10'>

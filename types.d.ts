@@ -103,6 +103,17 @@ type DomainSettings = {
    competitors?: string[],
 }
 
+type DomainStatsMonthlyItem = {
+   month: string,
+   count: number,
+}
+
+type DomainStatsType = {
+   total: number,
+   currentMonth: number,
+   monthly: DomainStatsMonthlyItem[],
+}
+
 type SettingsType = {
    scraper_type: string,
    scaping_api?: string,

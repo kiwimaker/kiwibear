@@ -8,6 +8,7 @@ import verifyUser from '../../utils/verifyUser';
 import { checkSerchConsoleIntegration, removeLocalSCData } from '../../utils/searchConsole';
 import { resetCompetitorsCache } from '../../utils/competitors';
 import { parseCompetitorsList } from '../../utils/competitorsShared';
+import DomainScrapeStat from '../../database/models/domainScrapeStat';
 
 type DomainsGetRes = {
    domains: DomainType[]
@@ -104,6 +105,7 @@ export const deleteDomain = async (req: NextApiRequest, res: NextApiResponse<Dom
       const { domain } = req.query || {};
       const removedDomCount: number = await Domain.destroy({ where: { domain } });
       const removedKeywordCount: number = await Keyword.destroy({ where: { domain } });
+      await DomainScrapeStat.destroy({ where: { domain } });
       const SCDataRemoved = await removeLocalSCData(domain as string);
       resetCompetitorsCache();
       return res.status(200).json({ domainRemoved: removedDomCount, keywordsRemoved: removedKeywordCount, SCDataRemoved });

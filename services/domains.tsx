@@ -74,6 +74,36 @@ export function useFetchDomain(router: NextRouter, domainName:string, onSuccess:
       } });
 }
 
+export async function fetchDomainStats(domain: string): Promise<{ stats: DomainStatsType }> {
+   if (!domain) { throw new Error('No Domain Name Provided!'); }
+   const res = await fetch(`${window.location.origin}/api/domain/stats?domain=${domain}`, { method: 'GET' });
+   if (res.status >= 400 && res.status < 600) {
+      throw new Error('Bad response from server');
+   }
+   return res.json();
+}
+
+export function useFetchDomainStats(domainName:string) {
+   return useQuery(['domain-stats', domainName], () => fetchDomainStats(domainName));
+}
+
+export type GlobalStatsResponse = {
+   domains: { domain: string, total: number, currentMonth: number }[],
+   totals: { totalScrapes: number, currentMonth: number },
+};
+
+export async function fetchGlobalStats(): Promise<GlobalStatsResponse> {
+   const res = await fetch(`${window.location.origin}/api/stats`, { method: 'GET' });
+   if (res.status >= 400 && res.status < 600) {
+      throw new Error('Bad response from server');
+   }
+   return res.json();
+}
+
+export function useFetchGlobalStats() {
+   return useQuery('global-stats', fetchGlobalStats);
+}
+
 export function useAddDomain(onSuccess:Function) {
    const router = useRouter();
    const queryClient = useQueryClient();

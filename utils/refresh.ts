@@ -5,6 +5,7 @@ import { setHistoryEntry } from './history';
 import parseKeywords from './parseKeywords';
 import Keyword from '../database/models/keyword';
 import { computeCompetitorSnapshot, getCompetitorsForDomain } from './competitors';
+import DomainScrapeStat from '../database/models/domainScrapeStat';
 
 /**
  * Refreshes the Keywords position by Scraping Google Search Result by
@@ -44,6 +45,22 @@ const refreshAndUpdateKeywords = async (rawkeyword:Keyword[], settings:SettingsT
    const end = performance.now();
    console.log(`time taken: ${end - start}ms`);
    return updatedKeywords;
+};
+
+const incrementDomainScrapeCount = async (domain: string) => {
+   if (!domain) { return; }
+   try {
+      const today = new Date();
+      const dateKey = today.toISOString().slice(0, 10);
+      const existing = await DomainScrapeStat.findOne({ where: { domain, date: dateKey } });
+      if (existing) {
+         await existing.increment('count');
+      } else {
+         await DomainScrapeStat.create({ domain, date: dateKey, count: 1 });
+      }
+   } catch (error) {
+      console.log('[WARN] Failed to increment domain scrape count', domain, error);
+   }
 };
 
 /**
@@ -125,6 +142,7 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
                competitors: competitorSnapshot,
                lastUpdateError: JSON.parse(updatedVal.lastUpdateError),
             };
+            await incrementDomainScrapeCount(keyword.domain);
          } catch (error) {
             console.log('[ERROR] Updating SERP for Keyword', keyword.keyword, error);
          }

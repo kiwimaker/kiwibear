@@ -17,14 +17,17 @@ type SERPObject = {
    url:string
 }
 
-export type RefreshResult = false | {
+type RefreshSuccessResult = {
    ID: number,
    keyword: string,
    position:number,
    url: string,
    result: SearchResult[],
-   error?: boolean | string
-}
+   requestsMade: number,
+   error?: boolean | string,
+};
+
+export type RefreshResult = false | RefreshSuccessResult;
 
 const resolveKeywordSettings = (keyword: KeywordType): KeywordCustomSettings | undefined => {
    const rawSettings = (keyword as any)?.settings;
@@ -132,12 +135,14 @@ export const getScraperClient = (
  * @returns {RefreshResult[]}
  */
 export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:SettingsType) : Promise<RefreshResult> => {
-   let refreshedResults:RefreshResult = {
+   let requestCount = 0;
+   let refreshedResults:RefreshSuccessResult = {
       ID: keyword.ID,
       keyword: keyword.keyword,
       position: keyword.position,
       url: keyword.url,
       result: keyword.lastResult,
+      requestsMade: 0,
       error: true,
    };
    const scraperType = settings?.scraper_type || '';
@@ -155,6 +160,7 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
    let scraperError:any = null;
    try {
       const responses:any[] = [];
+      requestCount += 1;
       const baseResponse = scraperType === 'proxy' && settings.proxy
          ? await scraperClient
          : await scraperClient.then((reslt:any) => reslt.json());
@@ -173,6 +179,7 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
             const additionalClient = getScraperClient(keywordForScraper, settings, scraperObj, url);
             if (!additionalClient) { continue; }
             try {
+               requestCount += 1;
                const additionalResponse = scraperType === 'proxy' && settings.proxy
                   ? await additionalClient
                   : await additionalClient.then((reslt:any) => reslt.json());
@@ -212,6 +219,7 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
             position: serp.postion,
             url: serp.url,
             result: annotatedResults,
+            requestsMade: requestCount,
             error: false,
          };
          console.log('[SERP]: ', keyword.keyword, serp.postion, serp.url);
@@ -220,11 +228,21 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
          throw new Error(baseResponse);
       }
    } catch (error:any) {
-      refreshedResults.error = scraperError || 'Unknown Error';
+      refreshedResults = {
+         ...refreshedResults,
+         requestsMade: requestCount,
+         error: scraperError || 'Unknown Error',
+      };
       if (settings.scraper_type === 'proxy' && error && error.response && error.response.statusText) {
-         refreshedResults.error = `[${error.response.status}] ${error.response.statusText}`;
+         refreshedResults = {
+            ...refreshedResults,
+            error: `[${error.response.status}] ${error.response.statusText}`,
+         };
       } else if (settings.scraper_type === 'proxy' && error) {
-         refreshedResults.error = error;
+         refreshedResults = {
+            ...refreshedResults,
+            error,
+         };
       }
 
       console.log('[ERROR] Scraping Keyword : ', keyword.keyword);
@@ -235,7 +253,10 @@ export const scrapeKeywordFromGoogle = async (keyword:KeywordType, settings:Sett
       }
    }
 
-   return refreshedResults;
+   return {
+      ...refreshedResults,
+      requestsMade: requestCount,
+   };
 };
 
 const mergePaginatedResults = (pages: SearchResult[][]): SearchResult[] => {

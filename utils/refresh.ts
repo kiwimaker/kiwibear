@@ -47,16 +47,18 @@ const refreshAndUpdateKeywords = async (rawkeyword:Keyword[], settings:SettingsT
    return updatedKeywords;
 };
 
-const incrementDomainScrapeCount = async (domain: string) => {
+const incrementDomainScrapeCount = async (domain: string, incrementBy = 1) => {
    if (!domain) { return; }
+   const incrementValue = Number.isFinite(incrementBy) ? Math.floor(Math.abs(incrementBy)) : 0;
+   if (incrementValue <= 0) { return; }
    try {
       const today = new Date();
       const dateKey = today.toISOString().slice(0, 10);
       const existing = await DomainScrapeStat.findOne({ where: { domain, date: dateKey } });
       if (existing) {
-         await existing.increment('count');
+         await existing.increment('count', { by: incrementValue });
       } else {
-         await DomainScrapeStat.create({ domain, date: dateKey, count: 1 });
+         await DomainScrapeStat.create({ domain, date: dateKey, count: incrementValue });
       }
    } catch (error) {
       console.log('[WARN] Failed to increment domain scrape count', domain, error);
@@ -142,7 +144,10 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
                competitors: competitorSnapshot,
                lastUpdateError: JSON.parse(updatedVal.lastUpdateError),
             };
-            await incrementDomainScrapeCount(keyword.domain);
+            const requestsMade = Number.isFinite(udpatedkeyword.requestsMade)
+               ? udpatedkeyword.requestsMade
+               : 1;
+            await incrementDomainScrapeCount(keyword.domain, requestsMade);
          } catch (error) {
             console.log('[ERROR] Updating SERP for Keyword', keyword.keyword, error);
          }

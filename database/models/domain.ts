@@ -41,6 +41,9 @@ class Domain extends Model {
 
    @Column({ type: DataType.STRING, allowNull: true })
    search_console!: string;
+
+   @Column({ type: DataType.STRING, allowNull: true, defaultValue: JSON.stringify([]) })
+   competitors!: string;
 }
 
 export default Domain;

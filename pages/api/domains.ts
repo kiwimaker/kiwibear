@@ -6,6 +6,8 @@ import Keyword from '../../database/models/keyword';
 import getdomainStats from '../../utils/domains';
 import verifyUser from '../../utils/verifyUser';
 import { checkSerchConsoleIntegration, removeLocalSCData } from '../../utils/searchConsole';
+import { resetCompetitorsCache } from '../../utils/competitors';
+import { parseCompetitorsList } from '../../utils/competitorsShared';
 
 type DomainsGetRes = {
    domains: DomainType[]
@@ -103,6 +105,7 @@ export const deleteDomain = async (req: NextApiRequest, res: NextApiResponse<Dom
       const removedDomCount: number = await Domain.destroy({ where: { domain } });
       const removedKeywordCount: number = await Keyword.destroy({ where: { domain } });
       const SCDataRemoved = await removeLocalSCData(domain as string);
+      resetCompetitorsCache();
       return res.status(200).json({ domainRemoved: removedDomCount, keywordsRemoved: removedKeywordCount, SCDataRemoved });
    } catch (error) {
       console.log('[ERROR] Deleting Domain: ', req.query.domain, error);
@@ -115,7 +118,7 @@ export const updateDomain = async (req: NextApiRequest, res: NextApiResponse<Dom
       return res.status(400).json({ domain: null, error: 'Domain is Required!' });
    }
    const { domain } = req.query || {};
-   const { notification_interval, notification_emails, search_console } = req.body as DomainSettings;
+   const { notification_interval, notification_emails, search_console, competitors } = req.body as DomainSettings;
 
    try {
       const domainToUpdate: Domain|null = await Domain.findOne({ where: { domain } });
@@ -131,8 +134,21 @@ export const updateDomain = async (req: NextApiRequest, res: NextApiResponse<Dom
          search_console.private_key = search_console.private_key ? cryptr.encrypt(search_console.private_key.trim()) : '';
       }
       if (domainToUpdate) {
-         domainToUpdate.set({ notification_interval, notification_emails, search_console: JSON.stringify(search_console) });
+         let competitorsPayload: string | undefined;
+         if (competitors !== undefined) {
+            const normalizedCompetitors = parseCompetitorsList(competitors);
+            competitorsPayload = JSON.stringify(normalizedCompetitors);
+         }
+         domainToUpdate.set({
+            notification_interval,
+            notification_emails,
+            search_console: JSON.stringify(search_console),
+            ...(competitorsPayload !== undefined ? { competitors: competitorsPayload } : {}),
+         });
          await domainToUpdate.save();
+         if (competitors !== undefined) {
+            resetCompetitorsCache();
+         }
       }
       return res.status(200).json({ domain: domainToUpdate });
    } catch (error) {

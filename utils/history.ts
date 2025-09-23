@@ -13,6 +13,17 @@ export const toHistoryEntry = (value: HistoryValue): KeywordHistoryEntry | null 
       if (value.url && typeof value.url === 'string') {
          entry.url = value.url;
       }
+      if (value.competitors && typeof value.competitors === 'object') {
+         entry.competitors = {};
+         Object.entries(value.competitors).forEach(([domain, competitorValue]) => {
+            if (isObject(competitorValue) && typeof competitorValue.position === 'number') {
+               entry.competitors![domain] = {
+                  position: competitorValue.position,
+                  ...(competitorValue.url && typeof competitorValue.url === 'string' ? { url: competitorValue.url } : {}),
+               };
+            }
+         });
+      }
       return entry;
    }
    return null;
@@ -36,18 +47,34 @@ export const normalizeHistory = (history: Record<string, HistoryValue> | null | 
    Object.entries(history).forEach(([dateKey, value]) => {
       const entry = toHistoryEntry(value);
       if (entry) {
-         normalized[dateKey] = entry.url ? { position: entry.position, url: entry.url } : { position: entry.position };
+         const normalizedEntry: KeywordHistoryEntry = { position: entry.position };
+         if (entry.url) {
+            normalizedEntry.url = entry.url;
+         }
+         if (entry.competitors && Object.keys(entry.competitors).length > 0) {
+            normalizedEntry.competitors = entry.competitors;
+         }
+         normalized[dateKey] = normalizedEntry;
       }
    });
    return normalized;
 };
 
-export const setHistoryEntry = (history: KeywordHistory, dateKey: string, position: number, url?: string) => {
+export const setHistoryEntry = (
+   history: KeywordHistory,
+   dateKey: string,
+   position: number,
+   url?: string,
+   competitors?: KeywordCompetitorSnapshot,
+) => {
    if (!dateKey) { return; }
    const entry: KeywordHistoryEntry = { position };
    if (url) {
       entry.url = url;
    }
+    if (competitors && Object.keys(competitors).length > 0) {
+       entry.competitors = competitors;
+    }
    history[dateKey] = entry;
 };
 

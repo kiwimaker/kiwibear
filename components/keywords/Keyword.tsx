@@ -106,7 +106,7 @@ const Keyword = (props: KeywordProps) => {
    const optionsButtonStyle = 'block px-2 py-2 cursor-pointer hover:bg-indigo-50 hover:text-blue-700';
    const hasCannibalization = domainMatches > 1;
    const badgeBaseClass = 'ml-2 inline-flex items-center whitespace-nowrap rounded px-2.5 py-[3px] text-[10px] font-semibold uppercase tracking-wide';
-   const cannibalBadgeClass = `${badgeBaseClass} rounded-full bg-rose-50 border border-rose-200 text-rose-700`;
+   const cannibalBadgeClass = `${badgeBaseClass} bg-rose-50 border border-rose-200 text-rose-700`;
    const top20BadgeClass = `${badgeBaseClass} rounded-full bg-amber-50 border border-amber-200 text-amber-700`;
    const hasExtendedSerp = !!(keywordSettings && (keywordSettings.fetchTop20
       || (keywordSettings.serpPages && keywordSettings.serpPages > 1)));
@@ -146,7 +146,7 @@ const Keyword = (props: KeywordProps) => {
             {hasExtendedSerp && (
                <span className={top20BadgeClass} title='Seguimiento hasta el top 20'>
                   <Icon type='trophy' size={12} color='#b45309' classes='mr-1 top-[1px]' />
-                  20
+                  Top 20
                </span>
             )}
             {hasCannibalization && (

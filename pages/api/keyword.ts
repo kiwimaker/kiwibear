@@ -1,8 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../database/database';
 import Keyword from '../../database/models/keyword';
+import Domain from '../../database/models/domain';
 import parseKeywords from '../../utils/parseKeywords';
 import verifyUser from '../../utils/verifyUser';
+import { computeCompetitorSnapshot } from '../../utils/competitors';
+import { parseCompetitorsList } from '../../utils/competitorsShared';
 
 type KeywordGetResponse = {
    keyword?: KeywordType | null
@@ -27,8 +30,18 @@ const getKeyword = async (req: NextApiRequest, res: NextApiResponse<KeywordGetRe
       const query = { ID: parseInt((req.query.id as string), 10) };
       const foundKeyword:Keyword| null = await Keyword.findOne({ where: query });
       const pareseKeyword = foundKeyword && parseKeywords([foundKeyword.get({ plain: true })]);
-      const keywords = pareseKeyword && pareseKeyword[0] ? pareseKeyword[0] : null;
-      return res.status(200).json({ keyword: keywords });
+      let keywordData = pareseKeyword && pareseKeyword[0] ? pareseKeyword[0] : null;
+      if (keywordData) {
+         const domainRecord = await Domain.findOne({ where: { domain: keywordData.domain } });
+         const competitorsList = parseCompetitorsList(domainRecord?.competitors || null);
+         if (competitorsList.length > 0 && Array.isArray(keywordData.lastResult)) {
+            keywordData = {
+               ...keywordData,
+               competitors: computeCompetitorSnapshot(keywordData.lastResult, competitorsList),
+            };
+         }
+      }
+      return res.status(200).json({ keyword: keywordData });
    } catch (error) {
       console.log('[ERROR] Getting Keyword: ', error);
       return res.status(400).json({ error: 'Error Loading Keyword' });

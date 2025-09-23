@@ -17,11 +17,20 @@ type DomainType = {
    scPosition?: number,
    search_console?: string,
    ideas_settings?: string,
+   competitors?: string,
+}
+
+type KeywordCompetitorSnapshot = {
+   [domain: string]: {
+      position: number,
+      url?: string,
+   }
 }
 
 type KeywordHistoryEntry = {
    position: number,
    url?: string,
+   competitors?: KeywordCompetitorSnapshot,
 }
 
 type KeywordHistory = {
@@ -52,10 +61,11 @@ type KeywordType = {
    updating: boolean,
    lastUpdateError: {date: string, error: string, scraper: string} | false,
    scData?: KeywordSCData,
-   uid?: string
-   city?: string
-   settings?: KeywordCustomSettings
-   sortOrder?: number|null
+   uid?: string,
+   city?: string,
+   settings?: KeywordCustomSettings,
+   sortOrder?: number|null,
+   competitors?: KeywordCompetitorSnapshot,
 }
 
 type KeywordLastResult = {
@@ -89,7 +99,8 @@ type DomainSearchConsole = {
 type DomainSettings = {
    notification_interval: string,
    notification_emails: string,
-   search_console?: DomainSearchConsole
+   search_console?: DomainSearchConsole,
+   competitors?: string[],
 }
 
 type SettingsType = {

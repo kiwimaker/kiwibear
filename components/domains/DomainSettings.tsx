@@ -18,15 +18,34 @@ type DomainSettingsError = {
 
 const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
    const router = useRouter();
-   const [currentTab, setCurrentTab] = useState<'notification'|'searchconsole'>('notification');
+   const [currentTab, setCurrentTab] = useState<'notification'|'searchconsole'|'competitors'>('notification');
    const [showRemoveDomain, setShowRemoveDomain] = useState<boolean>(false);
    const [settingsError, setSettingsError] = useState<DomainSettingsError>({ type: '', msg: '' });
+   const [newCompetitor, setNewCompetitor] = useState<string>('');
+
+   const parseCompetitors = (value?: string | null): string[] => {
+      if (!value) { return []; }
+      try {
+         const parsed = JSON.parse(value);
+         if (Array.isArray(parsed)) {
+            return Array.from(new Set(parsed.map((item) => `${item}`.trim().toLowerCase()).filter((item) => !!item)));
+         }
+      } catch (error) {
+         if (value.includes(',')) {
+            return Array.from(new Set(value.split(',').map((item) => item.trim().toLowerCase()).filter((item) => !!item)));
+         }
+      }
+      const normalized = value.trim().toLowerCase();
+      return normalized ? [normalized] : [];
+   };
+
    const [domainSettings, setDomainSettings] = useState<DomainSettings>(() => ({
       notification_interval: domain && domain.notification_interval ? domain.notification_interval : 'never',
       notification_emails: domain && domain.notification_emails ? domain.notification_emails : '',
       search_console: domain && domain.search_console ? JSON.parse(domain.search_console) : {
          property_type: 'domain', url: '', client_email: '', private_key: '',
       },
+      competitors: domain && domain.competitors ? parseCompetitors(domain.competitors) : [],
    }));
 
    const { mutate: updateMutate, error: domainUpdateError, isLoading: isUpdating } = useUpdateDomain(() => closeModal(false));
@@ -35,7 +54,12 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
    // Get the Full Domain Data along with the Search Console API Data.
    useFetchDomain(router, domain && domain.domain ? domain.domain : '', (domainObj:DomainType) => {
       const currentSearchConsoleSettings = domainObj.search_console && JSON.parse(domainObj.search_console);
-      setDomainSettings({ ...domainSettings, search_console: currentSearchConsoleSettings || domainSettings.search_console });
+      const competitorsFromDomain = domainObj.competitors ? parseCompetitors(domainObj.competitors) : [];
+      setDomainSettings((prev) => ({
+         ...prev,
+         search_console: currentSearchConsoleSettings || prev.search_console,
+         competitors: competitorsFromDomain,
+      }));
    });
 
    const updateDomain = () => {
@@ -55,8 +79,32 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
             setSettingsError({ type: '', msg: '' });
          }, 3000);
       } else if (domain) {
-            updateMutate({ domainSettings, domain });
+         const sanitizedSettings: DomainSettings = {
+            ...domainSettings,
+            competitors: domainSettings.competitors || [],
+         };
+         updateMutate({ domainSettings: sanitizedSettings, domain });
+      }
+   };
+
+   const addCompetitor = () => {
+      const normalized = newCompetitor.trim().toLowerCase();
+      if (!normalized) { return; }
+      setDomainSettings((prev) => {
+         const currentCompetitors = prev.competitors || [];
+         if (currentCompetitors.includes(normalized)) {
+            return prev;
          }
+         return { ...prev, competitors: [...currentCompetitors, normalized] };
+      });
+      setNewCompetitor('');
+   };
+
+   const removeCompetitor = (competitor: string) => {
+      setDomainSettings((prev) => ({
+         ...prev,
+         competitors: (prev.competitors || []).filter((item) => item !== competitor),
+      }));
    };
 
    const tabStyle = `inline-block px-4 py-2 rounded-md mr-3 cursor-pointer text-sm select-none z-10
@@ -77,6 +125,11 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
                      className={`${tabStyle} ${currentTab === 'searchconsole' ? ' bg-white text-blue-600 border-slate-200' : 'border-transparent'}`}
                      onClick={() => setCurrentTab('searchconsole')}>
                         <Icon type='google' /> Search Console
+                     </li>
+                     <li
+                     className={`${tabStyle} ${currentTab === 'competitors' ? ' bg-white text-blue-600 border-slate-200' : 'border-transparent'}`}
+                     onClick={() => setCurrentTab('competitors')}>
+                        <Icon type='target' /> Competitors
                      </li>
                   </ul>
                </div>
@@ -144,8 +197,52 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
                                  search_console: { ...(domainSettings.search_console as DomainSearchConsole), private_key: event.target.value },
                               })}
                            />
+                       </div>
+                    </>
+                  )}
+                  {currentTab === 'competitors' && (
+                     <div className='space-y-4'>
+                        <p className='text-sm text-gray-600'>Añade dominios de la competencia para analizar sus posiciones en tus keywords.</p>
+                        <div className='flex gap-2 items-center'>
+                           <input
+                              className='flex-1 border border-gray-200 rounded px-3 py-2 text-sm focus:outline-none focus:border-indigo-300'
+                              placeholder='competidor.com'
+                              value={newCompetitor}
+                              onChange={(event) => setNewCompetitor(event.target.value)}
+                              onKeyDown={(event) => {
+                                 if (event.key === 'Enter') {
+                                    event.preventDefault();
+                                    addCompetitor();
+                                 }
+                              }}
+                           />
+                           <button
+                              className='px-3 py-2 text-sm font-semibold bg-blue-600 text-white rounded'
+                              onClick={addCompetitor}>
+                              Añadir
+                           </button>
                         </div>
-                     </>
+                        {(domainSettings.competitors && domainSettings.competitors.length > 0) ? (
+                           <ul className='flex flex-wrap gap-2'>
+                              {domainSettings.competitors.map((competitor) => (
+                                 <li
+                                    key={competitor}
+                                    className={`inline-flex items-center gap-2 bg-slate-100 text-slate-700
+                                    px-3 py-1 rounded-full text-xs uppercase tracking-wide`}>
+                                    {competitor}
+                                    <button
+                                       className='text-slate-500 hover:text-rose-500'
+                                       onClick={() => removeCompetitor(competitor)}
+                                       title='Eliminar competidor'>
+                                       <Icon type='close' size={12} />
+                                    </button>
+                                 </li>
+                              ))}
+                           </ul>
+                        ) : (
+                           <p className='text-xs text-gray-500'>No se han añadido competidores todavía.</p>
+                        )}
+                     </div>
                   )}
                </div>
                {!isUpdating && (domainUpdateError as Error)?.message && (

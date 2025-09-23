@@ -4,6 +4,7 @@ import { RefreshResult, removeFromRetryQueue, retryScrape, scrapeKeywordFromGoog
 import { setHistoryEntry } from './history';
 import parseKeywords from './parseKeywords';
 import Keyword from '../database/models/keyword';
+import { computeCompetitorSnapshot, getCompetitorsForDomain } from './competitors';
 
 /**
  * Refreshes the Keywords position by Scraping Google Search Result by
@@ -76,7 +77,20 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
          const { history } = keyword;
          const theDate = new Date();
          const dateKey = `${theDate.getFullYear()}-${theDate.getMonth() + 1}-${theDate.getDate()}`;
-         setHistoryEntry(history, dateKey, newPos, udpatedkeyword.url);
+         let competitorSnapshot: KeywordCompetitorSnapshot | undefined;
+         try {
+            const competitors = await getCompetitorsForDomain(keyword.domain);
+            if (competitors.length > 0 && Array.isArray(udpatedkeyword.result)) {
+               const snapshot = computeCompetitorSnapshot(udpatedkeyword.result as KeywordLastResult[], competitors);
+               if (snapshot && Object.keys(snapshot).length > 0) {
+                  competitorSnapshot = snapshot;
+               }
+            }
+         } catch (error) {
+            console.log('[WARN] Failed to compute competitor snapshot', error);
+         }
+
+         setHistoryEntry(history, dateKey, newPos, udpatedkeyword.url, competitorSnapshot);
 
          const updatedVal = {
             position: newPos,
@@ -105,7 +119,12 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
                history: JSON.stringify(history),
             });
             console.log('[SUCCESS] Updating the Keyword: ', keyword.keyword);
-            updated = { ...keyword, ...updatedVal, lastUpdateError: JSON.parse(updatedVal.lastUpdateError) };
+            updated = {
+               ...keyword,
+               ...updatedVal,
+               competitors: competitorSnapshot,
+               lastUpdateError: JSON.parse(updatedVal.lastUpdateError),
+            };
          } catch (error) {
             console.log('[ERROR] Updating SERP for Keyword', keyword.keyword, error);
          }

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { Op } from 'sequelize';
 import db from '../../database/database';
 import Keyword from '../../database/models/keyword';
+import Domain from '../../database/models/domain';
 import { getAppSettings } from './settings';
 import verifyUser from '../../utils/verifyUser';
 import parseKeywords from '../../utils/parseKeywords';
@@ -9,10 +10,14 @@ import { integrateKeywordSCData, readLocalSCData } from '../../utils/searchConso
 import refreshAndUpdateKeywords from '../../utils/refresh';
 import { getKeywordsVolume, updateKeywordsVolumeData } from '../../utils/adwords';
 import { getHistoryPosition, getHistoryUrl, sortHistoryByDate } from '../../utils/history';
+import { computeCompetitorSnapshot } from '../../utils/competitors';
+import { parseCompetitorsList } from '../../utils/competitorsShared';
 import { isKeywordSortOrderSupported } from '../../utils/keywordSortOrder';
 
 type KeywordsGetResponse = {
    keywords?: KeywordType[],
+   competitors?: string[],
+   sortOrderSupported?: boolean,
    error?: string|null,
 }
 
@@ -56,6 +61,8 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
 
    try {
       const supportsSortOrder = await isKeywordSortOrderSupported();
+      const domainRecord = await Domain.findOne({ where: { domain } });
+      const competitorsList = parseCompetitorsList(domainRecord?.competitors || null);
       const findQuery: any = { where: { domain } };
       if (supportsSortOrder && Keyword.sequelize) {
          const literalOrder = Keyword.sequelize.literal('CASE WHEN sort_order IS NULL THEN 999999 ELSE sort_order END');
@@ -72,21 +79,32 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
             const { date, entry } = item;
             const position = getHistoryPosition(entry);
             const url = getHistoryUrl(entry);
-            lastWeekHistory[date] = url ? { position, url } : { position };
+            const historyEntry: KeywordHistoryEntry = url ? { position, url } : { position };
+            if (entry?.competitors && Object.keys(entry.competitors).length > 0) {
+               historyEntry.competitors = entry.competitors;
+            }
+            lastWeekHistory[date] = historyEntry;
          });
          const domainMatches = Array.isArray(keyword.lastResult)
             ? keyword.lastResult.filter((item) => item?.matchesDomain).length
             : 0;
+         const competitorSnapshot = competitorsList.length > 0 && Array.isArray(keyword.lastResult)
+            ? computeCompetitorSnapshot(keyword.lastResult, competitorsList)
+            : {};
          const keywordWithSlimHistory = {
             ...keyword,
             domainMatches,
             lastResult: [],
             history: lastWeekHistory,
+            competitors: competitorSnapshot,
          };
          const finalKeyword = domainSCData ? integrateKeywordSCData(keywordWithSlimHistory, domainSCData) : keywordWithSlimHistory;
+         if (competitorsList.length > 0) {
+            finalKeyword.competitors = competitorSnapshot;
+         }
          return finalKeyword;
       });
-      return res.status(200).json({ keywords: processedKeywords, sortOrderSupported: supportsSortOrder });
+      return res.status(200).json({ keywords: processedKeywords, competitors: competitorsList, sortOrderSupported: supportsSortOrder });
    } catch (error) {
       console.log('[ERROR] Getting Domain Keywords for ', domain, error);
       return res.status(400).json({ error: 'Error Loading Keywords for this Domain.' });

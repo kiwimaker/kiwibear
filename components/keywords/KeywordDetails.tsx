@@ -27,6 +27,9 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
       return keywordSearchResult.filter((item) => item?.matchesDomain);
    }, [keywordSearchResult]);
    const hasCannibalization = domainMatches.length > 1;
+   const competitorSnapshot = useMemo<KeywordCompetitorSnapshot>(() => keyword.competitors || {}, [keyword.competitors]);
+   const competitorEntries = useMemo(() => Object.entries(competitorSnapshot), [competitorSnapshot]);
+   const formatCompetitorLabel = (value: string) => value.replace(/^https?:\/\/(www\.)?/i, '');
    const dateOptions = [
       { label: 'Last 7 Days', value: '7' },
       { label: 'Last 30 Days', value: '30' },
@@ -86,7 +89,31 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
                </div>
                <div className='keywordDetails__content p-6'>
 
-                  <div className='keywordDetails__section'>
+                 <div className='keywordDetails__section'>
+                     {competitorEntries.length > 0 && (
+                        <div className='mb-8'>
+                           <h3 className='font-bold text-gray-700 text-lg mb-3'>Competidores</h3>
+                           <ul className='space-y-2 text-sm text-gray-600'>
+                              {competitorEntries.map(([competitorDomain, data]) => (
+                                 <li key={competitorDomain} className='flex justify-between items-center border border-slate-200 rounded px-3 py-2'>
+                                    <span className='font-semibold text-slate-700'>{formatCompetitorLabel(competitorDomain)}</span>
+                                    <span className='text-xs text-slate-500'>
+                                       {data?.position && data.position > 0 ? `Posición #${data.position}` : 'Fuera del top 100'}
+                                       {data?.url && data.url !== '' && (
+                                          <a
+                                             className='ml-2 text-indigo-600 hover:underline'
+                                             href={data.url}
+                                             target='_blank'
+                                             rel='noreferrer'>
+                                             URL
+                                          </a>
+                                       )}
+                                    </span>
+                                 </li>
+                              ))}
+                           </ul>
+                        </div>
+                     )}
                      <div className="keywordDetails__section__head flex justify-between mb-5">
                         <h3 className=' font-bold text-gray-700 text-lg'>SERP History</h3>
                         <div className="keywordDetails__section__chart_select mr-3">

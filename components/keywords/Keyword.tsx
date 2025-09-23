@@ -146,7 +146,7 @@ const Keyword = (props: KeywordProps) => {
             {hasExtendedSerp && (
                <span className={top20BadgeClass} title='Seguimiento hasta el top 20'>
                   <Icon type='trophy' size={12} color='#b45309' classes='mr-1 top-[1px]' />
-                  Top 20
+                  20
                </span>
             )}
             {hasCannibalization && (

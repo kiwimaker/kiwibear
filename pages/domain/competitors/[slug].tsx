@@ -64,7 +64,7 @@ const DomainCompetitors: NextPage = () => {
          )}
          {activDomain && activDomain.domain && (
             <Head>
-               <title>{`${activDomain.domain} - Competitors - SerpBear` }</title>
+               <title>{`${activDomain.domain} - Competitors - KiwiBear` }</title>
             </Head>
          )}
          <TopBar showSettings={() => setShowSettings(true)} showAddModal={() => setShowAddDomain(true)} />

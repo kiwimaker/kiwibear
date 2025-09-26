@@ -59,13 +59,13 @@ const Research: NextPage = () => {
    return (
       <div className={'Login'}>
          <Head>
-            <title>Research Keywords - SerpBear</title>
+            <title>Research Keywords - KiwiBear</title>
          </Head>
          <TopBar showSettings={() => setShowSettings(true)} showAddModal={() => null } />
          <div className=" w-full max-w-7xl mx-auto lg:flex lg:flex-row">
             <div className="sidebar w-full p-6 lg:pt-44 lg:w-1/5 lg:block lg:pr-0" data-testid="sidebar">
                <h3 className="hidden py-7 text-base font-bold text-blue-700 lg:block">
-                  <span className=' relative top-[3px] mr-1'><Icon type="logo" size={24} color="#364AFF" /></span> SerpBear
+                  <span className=' relative top-[3px] mr-1'><Icon type="logo" size={24} color="#364AFF" /></span> KiwiBear
                </h3>
                <div className={`sidebar_menu domKeywords max-h-96 overflow-auto styled-scrollbar p-4
                 bg-white border border-gray-200 rounded lg:rounded-none lg:rounded-s lg:border-r-0`}>

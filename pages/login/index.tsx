@@ -63,14 +63,14 @@ const Login: NextPage = () => {
    return (
       <div className={'Login'}>
          <Head>
-            <title>Login - SerpBear</title>
+            <title>Login - KiwiBear</title>
          </Head>
          <div className='flex items-center justify-center w-full h-screen'>
             <div className='w-80 mt-[-300px]'>
                <h3 className="py-7 text-2xl font-bold text-blue-700 text-center">
                   <span className=' relative top-[3px] mr-1'>
                      <Icon type="logo" size={30} color="#364AFF" />
-                  </span> SerpBear
+                  </span> KiwiBear
                </h3>
                <div className='relative bg-[white] rounded-md text-sm border p-5'>
                   <div className="settings__section__input mb-5">

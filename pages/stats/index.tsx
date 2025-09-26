@@ -31,7 +31,7 @@ const StatsPage = () => {
                </div>
          )}
          <Head>
-            <title>Stats - SerpBear</title>
+            <title>Stats - KiwiBear</title>
          </Head>
          <TopBar showSettings={() => setShowSettings(true)} showAddModal={() => setShowAddDomain(true)} />
          <div className="flex w-full max-w-7xl mx-auto px-5 pt-10">

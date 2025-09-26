@@ -30,7 +30,7 @@ const getDomainStats = async (domain: string): Promise<DomainStatsType> => {
          ? record.count
          : parseInt(`${record.count}`, 10) || 0;
       total += countValue;
-      const recordDate = record.date instanceof Date ? record.date : new Date(record.date);
+      const recordDate = new Date(record.date);
       const monthKey = startOfMonth(recordDate);
       monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + countValue;
       if (!Number.isNaN(recordDate.getTime()) && recordDate >= windowStart) {

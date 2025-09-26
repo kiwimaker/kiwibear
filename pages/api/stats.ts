@@ -44,7 +44,7 @@ const aggregateStats = async (): Promise<{ domains: StatsResponse['domains'], to
          ? record.count
          : parseInt(`${record.count}`, 10) || 0;
       entry.total += countValue;
-      const recordDate = record.date instanceof Date ? record.date : new Date(record.date);
+      const recordDate = new Date(record.date);
       if (!Number.isNaN(recordDate.getTime()) && recordDate >= windowStart) {
          entry.last30Days += countValue;
       }

@@ -48,18 +48,28 @@ const refreshAndUpdateKeywords = async (rawkeyword:Keyword[], settings:SettingsT
 };
 
 const incrementDomainScrapeCount = async (domain: string, incrementBy = 1) => {
-   if (!domain) { return; }
+   if (!domain) {
+      console.log('[DEBUG] incrementDomainScrapeCount skipped: missing domain', { incrementBy });
+      return;
+   }
    const incrementValue = Number.isFinite(incrementBy) ? Math.floor(Math.abs(incrementBy)) : 0;
-   if (incrementValue <= 0) { return; }
+   if (incrementValue <= 0) {
+      console.log('[DEBUG] incrementDomainScrapeCount skipped: non-positive increment', { domain, incrementBy });
+      return;
+   }
    try {
       const today = new Date();
       const dateKey = today.toISOString().slice(0, 10);
+      console.log('[DEBUG] incrementDomainScrapeCount start', { domain, incrementBy, incrementValue, dateKey });
       const existing = await DomainScrapeStat.findOne({ where: { domain, date: dateKey } });
       if (existing) {
+         console.log('[DEBUG] incrementDomainScrapeCount existing record', { domain, dateKey, currentCount: existing.get('count') });
          await existing.increment('count', { by: incrementValue });
       } else {
+         console.log('[DEBUG] incrementDomainScrapeCount creating record', { domain, dateKey, incrementValue });
          await DomainScrapeStat.create({ domain, date: dateKey, count: incrementValue });
       }
+      console.log('[DEBUG] incrementDomainScrapeCount success', { domain, dateKey, incrementValue });
    } catch (error) {
       console.log('[WARN] Failed to increment domain scrape count', domain, error);
    }
@@ -147,6 +157,12 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
             const requestsMade = Number.isFinite(udpatedkeyword.requestsMade)
                ? udpatedkeyword.requestsMade
                : 1;
+            console.log('[DEBUG] updateKeywordPosition incrementing stats', {
+               domain: keyword.domain,
+               keyword: keyword.keyword,
+               requestsMade: udpatedkeyword.requestsMade,
+               normalizedRequests: requestsMade,
+            });
             await incrementDomainScrapeCount(keyword.domain, requestsMade);
          } catch (error) {
             console.log('[ERROR] Updating SERP for Keyword', keyword.keyword, error);

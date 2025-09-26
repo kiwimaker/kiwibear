@@ -20,6 +20,7 @@ class DomainScrapeStat extends Model {
    ID!: number;
 
    @AllowNull(false)
+   @Unique('domain_day')
    @Column({ type: DataType.STRING })
    domain!: string;
 

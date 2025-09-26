@@ -106,6 +106,13 @@ const getKeywordSearchResults = async (req: NextApiRequest, res: NextApiResponse
       };
       const scrapeResult = await scrapeKeywordFromGoogle(dummyKeyword, settings);
       if (scrapeResult && !scrapeResult.error) {
+         console.log('[DEBUG] Manual search request executed', {
+            keyword: scrapeResult.keyword,
+            country: req.query.country,
+            device: req.query.device,
+            requestsMade: scrapeResult.requestsMade,
+            trackedDomain: dummyKeyword.domain,
+         });
          const searchResult = {
             results: scrapeResult.result,
             keyword: scrapeResult.keyword,
@@ -114,6 +121,12 @@ const getKeywordSearchResults = async (req: NextApiRequest, res: NextApiResponse
          };
          return res.status(200).json({ error: '', searchResult });
       }
+      console.log('[DEBUG] Manual search request failed', {
+         keyword: req.query.keyword,
+         country: req.query.country,
+         device: req.query.device,
+         error: scrapeResult?.error,
+      });
       return res.status(400).json({ error: 'Error Scraping Search Results for the given keyword!' });
    } catch (error) {
       console.log('ERROR refresThehKeywords: ', error);

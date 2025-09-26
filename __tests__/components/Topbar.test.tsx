@@ -11,7 +11,7 @@ describe('TopBar Component', () => {
    it('renders without crashing', async () => {
        render(<TopBar showSettings={jest.fn} showAddModal={jest.fn} />);
        expect(
-           await screen.findByText('SerpBear'),
+           await screen.findByText('Kiwibear'),
        ).toBeInTheDocument();
    });
 });

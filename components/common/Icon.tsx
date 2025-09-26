@@ -15,10 +15,21 @@ const Icon = ({ type, color = 'currentColor', size = 16, title = '', classes = '
    return (
        <span className={`icon inline-block relative top-[2px] ${classes}`}>
          {type === 'logo'
-            && <svg {...xmlnsProps} width={size} viewBox="0 0 1484.32 1348.5">
-               <path fill={color} d="M1406.23,604.17s-44-158.18,40.43-192.67,195,97.52,195,97.52,314-65.41,534,0c0,0,122.16-105.61,214.68-80.28,99.9,27.36,32.7,181.38,32.7,181.38s228.36,384.15,239.06,737.38c0,0-346.1,346.09-746.9,406.75,0,0-527.47-106.44-737.38-449.57C1177.88,1304.68,1169.55,1008.54,1406.23,604.17Z" transform="translate(-1177.84 -405.75)"/>
-               <path fill='white' d="M1920.79,873S1659,855,1635,1275c0,0-19,182,304.82,178.35,244-2.75,260.55-118.61,266.41-182C2212,1209,2131,874,1920.79,873Z" transform="translate(-1177.84 -405.75)"/>
-               <path fill={color} d="M1930.07,1194.67s143.91,5.95,116.55,94-118.93,83.25-118.93,83.25-96.34,0-134.4-95.15C1764.45,1204.62,1930.07,1194.67,1930.07,1194.67Z" transform="translate(-1177.84 -405.75)"/>
+            && <svg {...xmlnsProps} width={size} viewBox="0 0 64 64">
+               <circle cx="32" cy="32" r="30" fill={color} />
+               <circle cx="32" cy="32" r="22" fill="#ffffff" fillOpacity="0.75" />
+               <path
+                  d="M46 24c4 6-1 16-9.5 20.5S18 46 14 40c-1.2-1.8 0-4 2.5-5.8S24 30 24 26c0-2.5-1.2-4.8.6-6.3C28 17 34 18 38 20.5c2.3 1.4 5.4 1.4 8 3.5Z"
+                  fill="#ffffff"
+                  fillOpacity="0.35"
+               />
+               <circle cx="32" cy="32" r="6" fill="#0f172a" fillOpacity="0.85" />
+               {[...Array(8)].map((_, index) => {
+                  const angle = (index * Math.PI) / 4;
+                  const seedX = 32 + Math.cos(angle) * 12;
+                  const seedY = 32 + Math.sin(angle) * 12;
+                  return <circle key={index} cx={seedX} cy={seedY} r="2.2" fill="#0f172a" fillOpacity="0.7" />;
+               })}
             </svg>
          }
          {type === 'loading'

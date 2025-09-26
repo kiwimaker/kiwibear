@@ -8,7 +8,7 @@ jest.mock('next/router', () => jest.requireActual('next-router-mock'));
 describe('Sidebar Component', () => {
    it('renders without crashing', async () => {
        render(<Sidebar domains={[dummyDomain]} showAddModal={addDomainMock} />);
-       expect(screen.getByText('SerpBear')).toBeInTheDocument();
+       expect(screen.getByText('Kiwibear')).toBeInTheDocument();
    });
    it('renders domain list', async () => {
       render(<Sidebar domains={[dummyDomain]} showAddModal={addDomainMock} />);

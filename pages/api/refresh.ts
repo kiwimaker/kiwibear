@@ -125,7 +125,7 @@ const getKeywordSearchResults = async (req: NextApiRequest, res: NextApiResponse
          keyword: req.query.keyword,
          country: req.query.country,
          device: req.query.device,
-         error: scrapeResult && scrapeResult !== false ? scrapeResult.error : 'Scrape failed',
+         error: scrapeResult !== false ? scrapeResult.error || 'Scrape failed' : 'Scrape failed',
       });
       return res.status(400).json({ error: 'Error Scraping Search Results for the given keyword!' });
    } catch (error) {

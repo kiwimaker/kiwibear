@@ -8,7 +8,7 @@ import DomainSettings from '../../components/domains/DomainSettings';
 import Settings from '../../components/settings/Settings';
 import Footer from '../../components/common/Footer';
 import Icon from '../../components/common/Icon';
-import { useFetchDomains, useFetchGlobalStats } from '../../services/domains';
+import { useFetchDomains, useFetchGlobalStats, useFetchDomainScrapeLogs } from '../../services/domains';
 import { useFetchSettings } from '../../services/settings';
 
 const StatsPage = () => {
@@ -19,9 +19,11 @@ const StatsPage = () => {
    const { data: appSettingsData, isLoading: isAppSettingsLoading } = useFetchSettings();
    const { data: domainsData } = useFetchDomains(router, false);
    const { data: statsData, isLoading: statsLoading } = useFetchGlobalStats();
+   const { data: logsData, isLoading: logsLoading } = useFetchDomainScrapeLogs(undefined, 100);
 
    const domains = domainsData?.domains || [];
    const stats = statsData || { domains: [], totals: { totalScrapes: 0, last30Days: 0 } };
+   const logs = logsData?.logs || [];
 
    return (
       <div className="Domain ">
@@ -86,6 +88,57 @@ const StatsPage = () => {
                               </tbody>
                            </table>
                         </div>
+                     </div>
+
+                     <div className='border border-slate-200 rounded-lg bg-white'>
+                        <div className='px-4 py-3 border-b border-slate-100 flex items-center gap-2 text-sm font-semibold text-slate-600'>
+                           <Icon type='clock' size={16} />
+                           Actividad reciente de scrapes
+                        </div>
+                        {logsLoading ? (
+                           <p className='px-4 py-3 text-sm text-slate-500'>Cargando actividad…</p>
+                        ) : (
+                           <div className='overflow-x-auto'>
+                              <table className='min-w-full text-sm'>
+                                 <thead className='bg-slate-50 text-xs uppercase tracking-wider text-slate-500'>
+                                    <tr>
+                                       <th className='text-left px-4 py-2'>Fecha</th>
+                                       <th className='text-left px-4 py-2'>Dominio</th>
+                                       <th className='text-left px-4 py-2'>Keyword</th>
+                                       <th className='text-left px-4 py-2'>Solicitudes</th>
+                                       <th className='text-left px-4 py-2'>Estado</th>
+                                       <th className='text-left px-4 py-2'>Mensaje</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody>
+                                    {logs.length === 0 && (
+                                       <tr>
+                                          <td className='px-4 py-3 text-slate-500 text-sm' colSpan={6}>Todavía no hay actividad registrada.</td>
+                                       </tr>
+                                    )}
+                                    {logs.map((log) => {
+                                       const statusStyles = log.status === 'success'
+                                          ? 'bg-green-100 text-green-700'
+                                          : 'bg-red-100 text-red-700';
+                                       return (
+                                          <tr key={log.ID} className='border-t border-slate-100 hover:bg-slate-50 transition'>
+                                             <td className='px-4 py-2 whitespace-nowrap'>{new Date(log.createdAt).toLocaleString()}</td>
+                                             <td className='px-4 py-2 font-semibold text-slate-700'>{log.domain}</td>
+                                             <td className='px-4 py-2 text-slate-600'>{log.keyword || '—'}</td>
+                                             <td className='px-4 py-2'>{log.requests}</td>
+                                             <td className='px-4 py-2'>
+                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusStyles}`}>
+                                                   {log.status === 'success' ? 'Éxito' : 'Error'}
+                                                </span>
+                                             </td>
+                                             <td className='px-4 py-2 text-slate-600'>{log.message}</td>
+                                          </tr>
+                                       );
+                                    })}
+                                 </tbody>
+                              </table>
+                           </div>
+                        )}
                      </div>
                   </div>
                )}

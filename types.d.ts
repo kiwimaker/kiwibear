@@ -114,6 +114,17 @@ type DomainStatsType = {
    monthly: DomainStatsMonthlyItem[],
 }
 
+type DomainScrapeLogType = {
+   ID: number,
+   domain: string,
+   keyword?: string | null,
+   status: 'success' | 'error',
+   requests: number,
+   message: string,
+   details?: Record<string, unknown> | null,
+   createdAt: string,
+}
+
 type SettingsType = {
    scraper_type: string,
    scaping_api?: string,

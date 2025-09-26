@@ -3,6 +3,7 @@ import sqlite3 from 'sqlite3';
 import Domain from './models/domain';
 import Keyword from './models/keyword';
 import DomainScrapeStat from './models/domainScrapeStat';
+import DomainScrapeLog from './models/domainScrapeLog';
 
 const connection = new Sequelize({
    dialect: 'sqlite',
@@ -17,7 +18,7 @@ const connection = new Sequelize({
       idle: 10000,
    },
    logging: false,
-   models: [Domain, Keyword, DomainScrapeStat],
+   models: [Domain, Keyword, DomainScrapeStat, DomainScrapeLog],
    storage: './data/database.sqlite',
 });
 

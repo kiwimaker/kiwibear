@@ -50,10 +50,14 @@ const Sidebar = ({ domains, showAddModal } : SidebarProps) => {
          <button
             type='button'
             onClick={toggleCollapsed}
-            className='absolute top-4 right-3 text-slate-500 hover:text-blue-600 transition'
+            className='absolute top-4 right-3 flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-blue-600 transition'
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={!collapsed}
          >
             <Icon type={collapsed ? 'caret-right' : 'caret-left'} size={18} />
+            <span className={`whitespace-nowrap ${collapsed ? 'sr-only' : 'block'}`}>
+               Replegar barra
+            </span>
          </button>
          {!collapsed && (
             <h3 className="py-7 text-base font-bold text-blue-700">

@@ -51,12 +51,17 @@ const updateSettings = async (req: NextApiRequest, res: NextApiResponse<Settings
       const adwords_developer_token = settings.adwords_developer_token ? cryptr.encrypt(settings.adwords_developer_token.trim()) : '';
       const adwords_account_id = settings.adwords_account_id ? cryptr.encrypt(settings.adwords_account_id.trim()) : '';
 
+      const sanitizedScreenshotKey = typeof settings.screenshot_key === 'string'
+         ? settings.screenshot_key.trim()
+         : '';
+
       const securedSettings = {
          ...settings,
          scaping_api,
          smtp_password,
          search_console_client_email,
          search_console_private_key,
+         screenshot_key: sanitizedScreenshotKey,
          adwords_client_id,
          adwords_client_secret,
          adwords_developer_token,
@@ -72,12 +77,16 @@ const updateSettings = async (req: NextApiRequest, res: NextApiResponse<Settings
 };
 
 export const getAppSettings = async () : Promise<SettingsType> => {
-   const screenshotAPIKey = process.env.SCREENSHOT_API || '69408-serpbear';
+   const envScreenshotAPIKey = process.env.SCREENSHOT_API?.trim() || '';
    try {
       const settingsRaw = await readFile(`${process.cwd()}/data/settings.json`, { encoding: 'utf-8' });
       const failedQueueRaw = await readFile(`${process.cwd()}/data/failed_queue.json`, { encoding: 'utf-8' });
       const failedQueue: string[] = failedQueueRaw ? JSON.parse(failedQueueRaw) : [];
       const settings: SettingsType = settingsRaw ? JSON.parse(settingsRaw) : {};
+      const storedScreenshotKey = typeof settings.screenshot_key === 'string'
+         ? settings.screenshot_key.trim()
+         : '';
+      const screenshotAPIKey = storedScreenshotKey || envScreenshotAPIKey;
       let decryptedSettings = settings;
 
       try {
@@ -125,7 +134,7 @@ export const getAppSettings = async () : Promise<SettingsType> => {
          smtp_username: '',
          smtp_password: '',
          scrape_retry: false,
-         screenshot_key: screenshotAPIKey,
+         screenshot_key: envScreenshotAPIKey,
          search_console: true,
          search_console_client_email: '',
          search_console_private_key: '',

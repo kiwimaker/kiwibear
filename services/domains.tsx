@@ -104,6 +104,30 @@ export function useFetchGlobalStats() {
    return useQuery('global-stats', fetchGlobalStats);
 }
 
+type DomainScrapeLogResponse = {
+   logs: DomainScrapeLogType[],
+};
+
+export async function fetchDomainScrapeLogs(domain?: string, limit = 50): Promise<DomainScrapeLogResponse> {
+   const searchParams = new URLSearchParams();
+   if (domain) {
+      searchParams.append('domain', domain);
+   }
+   if (limit) {
+      searchParams.append('limit', `${limit}`);
+   }
+   const query = searchParams.toString();
+   const res = await fetch(`${window.location.origin}/api/logs/domain-scrape${query ? `?${query}` : ''}`, { method: 'GET' });
+   if (res.status >= 400 && res.status < 600) {
+      throw new Error('Bad response from server');
+   }
+   return res.json();
+}
+
+export function useFetchDomainScrapeLogs(domain?: string, limit = 50) {
+   return useQuery(['domain-scrape-logs', domain, limit], () => fetchDomainScrapeLogs(domain, limit), { keepPreviousData: true });
+}
+
 export function useAddDomain(onSuccess:Function) {
    const router = useRouter();
    const queryClient = useQueryClient();

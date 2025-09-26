@@ -24,7 +24,9 @@ type KeywordProps = {
    scDataType: string,
    style: Object,
    maxTitleColumnWidth: number,
-   tableColumns? : string[]
+   tableColumns? : string[],
+   canManageTop20: boolean,
+   toggleTop20Tracking: (keywordId: number, enable: boolean) => void,
 }
 
 const Keyword = (props: KeywordProps) => {
@@ -44,6 +46,8 @@ const Keyword = (props: KeywordProps) => {
       scDataType = 'threeDays',
       tableColumns = [],
       maxTitleColumnWidth,
+      canManageTop20,
+      toggleTop20Tracking,
    } = props;
    const {
       keyword,
@@ -62,6 +66,8 @@ const Keyword = (props: KeywordProps) => {
       domainMatches = 0,
       settings: keywordSettings,
    } = keywordData;
+
+   const isTrackingTop20 = keywordSettings?.fetchTop20 === true;
 
    const [showOptions, setShowOptions] = useState(false);
    const [showPositionError, setPositionError] = useState(false);
@@ -248,6 +254,19 @@ const Keyword = (props: KeywordProps) => {
                   <li><a className={optionsButtonStyle} onClick={() => { manageTags(); setShowOptions(false); }}>
                      <span className=' bg-green-100 text-green-500 px-1 rounded'><Icon type="tags" size={14} /></span> Add/Edit Tags</a>
                   </li>
+                  {canManageTop20 && (
+                     <li>
+                        <a
+                           className={optionsButtonStyle}
+                           onClick={() => {
+                              toggleTop20Tracking(ID, !isTrackingTop20);
+                              setShowOptions(false);
+                           }}>
+                           <span className=' bg-amber-100 text-amber-600 px-1 rounded'><Icon type="trophy" size={14} /></span>
+                           {isTrackingTop20 ? ' Desactivar Top 20' : ' Activar Top 20'}
+                        </a>
+                     </li>
+                  )}
                   <li><a className={optionsButtonStyle} onClick={() => { removeKeyword([ID]); setShowOptions(false); }}>
                      <span className=' bg-red-100 text-red-600 px-1 rounded'><Icon type="trash" size={14} /></span> Remove Keyword</a>
                   </li>

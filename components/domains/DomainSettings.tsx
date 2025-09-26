@@ -18,7 +18,7 @@ type DomainSettingsError = {
 
 const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
    const router = useRouter();
-   const [currentTab, setCurrentTab] = useState<'notification'|'searchconsole'|'competitors'>('notification');
+   const [currentTab, setCurrentTab] = useState<'notification'|'searchconsole'|'competitors'|'keywords'>('notification');
    const [showRemoveDomain, setShowRemoveDomain] = useState<boolean>(false);
    const [settingsError, setSettingsError] = useState<DomainSettingsError>({ type: '', msg: '' });
    const [newCompetitor, setNewCompetitor] = useState<string>('');
@@ -46,6 +46,7 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
          property_type: 'domain', url: '', client_email: '', private_key: '',
       },
       competitors: domain && domain.competitors ? parseCompetitors(domain.competitors) : [],
+      auto_manage_top20: !!(domain && domain.auto_manage_top20),
    }));
 
    const { mutate: updateMutate, error: domainUpdateError, isLoading: isUpdating } = useUpdateDomain(() => closeModal(false));
@@ -59,6 +60,7 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
          ...prev,
          search_console: currentSearchConsoleSettings || prev.search_console,
          competitors: competitorsFromDomain,
+         auto_manage_top20: domainObj.auto_manage_top20 ?? prev.auto_manage_top20,
       }));
    });
 
@@ -82,6 +84,7 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
          const sanitizedSettings: DomainSettings = {
             ...domainSettings,
             competitors: domainSettings.competitors || [],
+            auto_manage_top20: !!domainSettings.auto_manage_top20,
          };
          updateMutate({ domainSettings: sanitizedSettings, domain });
       }
@@ -130,6 +133,11 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
                      className={`${tabStyle} ${currentTab === 'competitors' ? ' bg-white text-blue-600 border-slate-200' : 'border-transparent'}`}
                      onClick={() => setCurrentTab('competitors')}>
                         <Icon type='target' /> Competitors
+                     </li>
+                     <li
+                     className={`${tabStyle} ${currentTab === 'keywords' ? ' bg-white text-blue-600 border-slate-200' : 'border-transparent'}`}
+                     onClick={() => setCurrentTab('keywords')}>
+                        <Icon type='trophy' /> Keywords
                      </li>
                   </ul>
                </div>
@@ -242,6 +250,25 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
                         ) : (
                            <p className='text-xs text-gray-500'>No se han añadido competidores todavía.</p>
                         )}
+                     </div>
+                  )}
+                  {currentTab === 'keywords' && (
+                     <div className='mb-4 flex justify-between items-start w-full gap-4'>
+                        <div>
+                           <p className='mb-1 font-semibold text-sm text-gray-700'>Gestión automática del Top 20</p>
+                           <p className='text-xs text-gray-500 max-w-xs'>
+                              Desactiva el seguimiento extendido cuando una keyword está en posición 6 o mejor y lo activa si cae fuera del top 10.
+                           </p>
+                        </div>
+                        <label className='flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none'>
+                           <input
+                              type='checkbox'
+                              className='accent-blue-600'
+                              checked={!!domainSettings.auto_manage_top20}
+                              onChange={(event) => setDomainSettings({ ...domainSettings, auto_manage_top20: event.target.checked })}
+                           />
+                           <span>{domainSettings.auto_manage_top20 ? 'Activo' : 'Inactivo'}</span>
+                        </label>
                      </div>
                   )}
                </div>

@@ -7,6 +7,7 @@ type DomainType = {
    notification: boolean,
    notification_interval: string,
    notification_emails: string,
+   auto_manage_top20?: boolean,
    lastUpdated: string,
    added: string,
    keywordCount?: number,
@@ -101,6 +102,7 @@ type DomainSettings = {
    notification_emails: string,
    search_console?: DomainSearchConsole,
    competitors?: string[],
+   auto_manage_top20?: boolean,
 }
 
 type DomainStatsMonthlyItem = {

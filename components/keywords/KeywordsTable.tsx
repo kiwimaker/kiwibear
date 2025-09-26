@@ -7,7 +7,7 @@ import Keyword from './Keyword';
 import KeywordDetails from './KeywordDetails';
 import KeywordFilters from './KeywordFilter';
 import Modal from '../common/Modal';
-import { useDeleteKeywords, useFavKeywords, useRefreshKeywords, useUpdateKeywordOrder } from '../../services/keywords';
+import { useDeleteKeywords, useFavKeywords, useRefreshKeywords, useUpdateKeywordOrder, useUpdateKeywordSettings } from '../../services/keywords';
 import KeywordTagManager from './KeywordTagManager';
 import AddTags from './AddTags';
 import KeywordOrderModal from './KeywordOrderModal';
@@ -47,6 +47,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    const { mutate: deleteMutate } = useDeleteKeywords(() => {});
    const { mutate: favoriteMutate } = useFavKeywords(() => {});
    const { mutate: refreshMutate } = useRefreshKeywords(() => {});
+   const { mutate: updateKeywordSettingsMutate, isLoading: isUpdatingKeywordSettings } = useUpdateKeywordSettings(() => {});
    const { mutate: updateOrderMutate, isLoading: isUpdatingOrder } = useUpdateKeywordOrder(() => setShowOrderModal(false));
    const [isMobile] = useIsMobile();
 
@@ -96,6 +97,17 @@ const KeywordsTable = (props: KeywordsTableProps) => {
       return keywordsByDevice(sortedKeywords, device);
    }, [keywords, device, sortBy, filterParams, scDataType]);
 
+   const canManageTop20 = useMemo(() => {
+      if (keywords.some((item) => item.settings?.fetchTop20)) {
+         return true;
+      }
+      if (!settings) { return false; }
+      const { scraper_type, available_scapers = [] } = settings;
+      const activeScraper = available_scapers?.find((scraper) => scraper.value === scraper_type);
+      const scraperLabel = (activeScraper?.label || scraper_type || '').toLowerCase();
+      return scraperLabel.includes('serper');
+   }, [keywords, settings]);
+
    const allDomainTags: string[] = useMemo(() => {
       const allTags = keywords.reduce((acc: string[], keyword) => [...acc, ...keyword.tags], []).filter((t) => t && t.trim() !== '');
       return [...new Set(allTags)];
@@ -109,6 +121,24 @@ const KeywordsTable = (props: KeywordsTableProps) => {
       }
       setSelectedKeywords(updatedSelectd);
    };
+
+   const handleBulkTop20Toggle = (enable: boolean) => {
+      if (selectedKeywords.length === 0 || isUpdatingKeywordSettings) { return; }
+      updateKeywordSettingsMutate(
+         { ids: selectedKeywords, settings: { fetchTop20: enable } },
+         { onSuccess: () => setSelectedKeywords([]) },
+      );
+   };
+
+   const handleKeywordTop20Toggle = (keywordID: number, enable: boolean) => {
+      if (isUpdatingKeywordSettings) { return; }
+      updateKeywordSettingsMutate({ ids: [keywordID], settings: { fetchTop20: enable } });
+   };
+
+   const top20ActionClasses = [
+      'block px-2 py-2 cursor-pointer hover:text-indigo-600',
+      isUpdatingKeywordSettings ? 'pointer-events-none opacity-50' : '',
+   ].filter(Boolean).join(' ');
 
    const updateColumns = (column:string) => {
       const newColumns = tableColumns.includes(column) ? tableColumns.filter((col) => col !== column) : [...tableColumns, column];
@@ -139,6 +169,8 @@ const KeywordsTable = (props: KeywordsTableProps) => {
          scDataType={scDataType}
          tableColumns={tableColumns}
          maxTitleColumnWidth={maxTitleColumnWidth}
+         canManageTop20={canManageTop20}
+         toggleTop20Tracking={handleKeywordTop20Toggle}
          />
       );
    };
@@ -173,6 +205,26 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                         >
                            <span className=' bg-green-100 text-green-500  px-1 rounded'><Icon type="tags" size={14} /></span> Tag Keywords</a>
                      </li>
+                     {canManageTop20 && (
+                        <>
+                           <li className='inline-block mr-4'>
+                              <a
+                              className={top20ActionClasses}
+                              onClick={() => handleBulkTop20Toggle(true)}
+                              >
+                                 <span className=' bg-amber-100 text-amber-600 px-1 rounded'><Icon type="trophy" size={14} /></span> Activar Top 20
+                              </a>
+                           </li>
+                           <li className='inline-block mr-4'>
+                              <a
+                              className={top20ActionClasses}
+                              onClick={() => handleBulkTop20Toggle(false)}
+                              >
+                                 <span className=' bg-slate-100 text-slate-500 px-1 rounded'><Icon type="trophy" size={14} /></span> Desactivar Top 20
+                              </a>
+                           </li>
+                        </>
+                     )}
                   </ul>
                </div>
             )}

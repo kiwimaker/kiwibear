@@ -9,12 +9,16 @@ const keywordProps = {
    showSCData: false,
    scDataType: '',
    style: {},
+   tableColumns: [],
+   maxTitleColumnWidth: 240,
    refreshkeyword: jest.fn(),
    favoriteKeyword: jest.fn(),
    removeKeyword: jest.fn(),
    selectKeyword: jest.fn(),
    manageTags: jest.fn(),
    showKeywordDetails: jest.fn(),
+   canManageTop20: false,
+   toggleTop20Tracking: jest.fn(),
 };
 jest.mock('react-chartjs-2', () => ({
    Line: () => null,

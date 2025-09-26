@@ -39,6 +39,9 @@ class Domain extends Model {
    @Column({ type: DataType.STRING, allowNull: true, defaultValue: '' })
    notification_emails!: string;
 
+   @Column({ type: DataType.BOOLEAN, allowNull: true, defaultValue: false })
+   auto_manage_top20!: boolean;
+
    @Column({ type: DataType.STRING, allowNull: true })
    search_console!: string;
 

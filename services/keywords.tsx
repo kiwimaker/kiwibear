@@ -134,6 +134,36 @@ export function useUpdateKeywordTags(onSuccess:Function) {
    });
 }
 
+export function useUpdateKeywordSettings(onSuccess:Function = () => {}) {
+   const queryClient = useQueryClient();
+   return useMutation(async ({ ids, settings }: { ids: number[], settings: KeywordCustomSettings }) => {
+      const keywordIds = ids.join(',');
+      if (!keywordIds) {
+         throw new Error('No keywords selected');
+      }
+      const headers = new Headers({ 'Content-Type': 'application/json', Accept: 'application/json' });
+      const fetchOpts = { method: 'PUT', headers, body: JSON.stringify({ settings }) };
+      const res = await fetch(`${window.location.origin}/api/keywords?id=${keywordIds}`, fetchOpts);
+      const payload = await res.json().catch(() => ({}));
+      if (res.status >= 400 && res.status < 600) {
+         const message = payload?.error || 'Bad response from server';
+         throw new Error(message);
+      }
+      return payload;
+   }, {
+      onSuccess: async () => {
+         toast('Seguimiento TOP20 actualizado', { icon: '✔️' });
+         onSuccess();
+         queryClient.invalidateQueries(['keywords']);
+      },
+      onError: (error: any) => {
+         console.log('Error actualizando la configuración de seguimiento TOP20', error);
+         const message = error?.message || 'Error actualizando la configuración de seguimiento.';
+         toast(message, { icon: '⚠️' });
+      },
+   });
+}
+
 export function useUpdateKeywordOrder(onSuccess:Function) {
    const queryClient = useQueryClient();
    return useMutation(async (sortOrder: { [id:number]: number }) => {

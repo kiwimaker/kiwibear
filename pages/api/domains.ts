@@ -120,7 +120,13 @@ export const updateDomain = async (req: NextApiRequest, res: NextApiResponse<Dom
       return res.status(400).json({ domain: null, error: 'Domain is Required!' });
    }
    const { domain } = req.query || {};
-   const { notification_interval, notification_emails, search_console, competitors } = req.body as DomainSettings;
+   const {
+      notification_interval,
+      notification_emails,
+      search_console,
+      competitors,
+      auto_manage_top20,
+   } = req.body as DomainSettings;
 
    try {
       const domainToUpdate: Domain|null = await Domain.findOne({ where: { domain } });
@@ -141,14 +147,16 @@ export const updateDomain = async (req: NextApiRequest, res: NextApiResponse<Dom
             const normalizedCompetitors = parseCompetitorsList(competitors);
             competitorsPayload = JSON.stringify(normalizedCompetitors);
          }
+         const autoManageTop20Value = auto_manage_top20 !== undefined ? !!auto_manage_top20 : undefined;
          domainToUpdate.set({
             notification_interval,
             notification_emails,
             search_console: JSON.stringify(search_console),
             ...(competitorsPayload !== undefined ? { competitors: competitorsPayload } : {}),
+            ...(autoManageTop20Value !== undefined ? { auto_manage_top20: autoManageTop20Value } : {}),
          });
          await domainToUpdate.save();
-         if (competitors !== undefined) {
+         if (competitors !== undefined || auto_manage_top20 !== undefined) {
             resetCompetitorsCache();
          }
       }

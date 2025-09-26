@@ -4,7 +4,7 @@ import { RefreshResult, removeFromRetryQueue, retryScrape, scrapeKeywordFromGoog
 import { setHistoryEntry } from './history';
 import parseKeywords from './parseKeywords';
 import Keyword from '../database/models/keyword';
-import { computeCompetitorSnapshot, getCompetitorsForDomain } from './competitors';
+import { computeCompetitorSnapshot, getCompetitorsForDomain, isAutoManageTop20EnabledForDomain } from './competitors';
 import DomainScrapeStat from '../database/models/domainScrapeStat';
 import DomainScrapeLog from '../database/models/domainScrapeLog';
 
@@ -140,6 +140,7 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
 
          setHistoryEntry(history, dateKey, newPos, udpatedkeyword.url, competitorSnapshot);
 
+         const autoManageTop20 = await isAutoManageTop20EnabledForDomain(keyword.domain);
          const updatedVal = {
             position: newPos,
             updating: false,
@@ -151,6 +152,29 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
                ? JSON.stringify({ date: theDate.toJSON(), error: `${udpatedkeyword.error}`, scraper: settings.scraper_type })
                : 'false',
          };
+
+         let settingsChanged = false;
+         let nextSettings: KeywordCustomSettings | undefined;
+
+         if (autoManageTop20) {
+            const settingsSnapshot: KeywordCustomSettings = { ...(keyword.settings || {}) };
+            const shouldDisableTop20 = newPos > 0 && newPos <= 6 && settingsSnapshot.fetchTop20 === true;
+            const shouldEnableTop20 = (newPos === 0 || newPos > 10) && settingsSnapshot.fetchTop20 !== true;
+
+            if (shouldDisableTop20) {
+               delete settingsSnapshot.fetchTop20;
+               settingsChanged = true;
+            }
+            if (shouldEnableTop20) {
+               settingsSnapshot.fetchTop20 = true;
+               settingsChanged = true;
+            }
+
+            if (settingsChanged) {
+               const sanitized = Object.keys(settingsSnapshot).length > 0 ? settingsSnapshot : undefined;
+               nextSettings = sanitized;
+            }
+         }
 
          // If failed, Add to Retry Queue Cron
          if (udpatedkeyword.error && settings?.scrape_retry) {
@@ -165,16 +189,23 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
             : 1;
 
          try {
-            await keywordRaw.update({
+            const updatePayload: any = {
                ...updatedVal,
                lastResult: Array.isArray(udpatedkeyword.result) ? JSON.stringify(udpatedkeyword.result) : udpatedkeyword.result,
                history: JSON.stringify(history),
-            });
+            };
+
+            if (settingsChanged) {
+               updatePayload.settings = nextSettings ? JSON.stringify(nextSettings) : null;
+            }
+
+            await keywordRaw.update(updatePayload);
             updated = {
                ...keyword,
                ...updatedVal,
                competitors: competitorSnapshot,
                lastUpdateError: JSON.parse(updatedVal.lastUpdateError),
+               ...(settingsChanged ? { settings: nextSettings } : {}),
             };
             await incrementDomainScrapeCount(keyword.domain, requestsMade);
             await recordDomainScrapeLog({

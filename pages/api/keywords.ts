@@ -204,15 +204,19 @@ const updateKeywords = async (req: NextApiRequest, res: NextApiResponse<Keywords
    if (!req.query.id && typeof req.query.id !== 'string') {
       return res.status(400).json({ error: 'keyword ID is Required!' });
    }
-   if (req.body.sticky === undefined && !req.body.tags === undefined) {
+   const keywordIDs = (req.query.id as string).split(',').map((item) => parseInt(item, 10));
+   const { sticky, tags, settings: settingsPayload } = req.body;
+   const hasSticky = sticky !== undefined;
+   const hasTags = tags !== undefined;
+   const hasSettings = Object.prototype.hasOwnProperty.call(req.body, 'settings');
+
+   if (!hasSticky && !hasTags && !hasSettings) {
       return res.status(400).json({ error: 'keyword Payload Missing!' });
    }
-   const keywordIDs = (req.query.id as string).split(',').map((item) => parseInt(item, 10));
-   const { sticky, tags } = req.body;
 
    try {
       let keywords: KeywordType[] = [];
-      if (sticky !== undefined) {
+      if (hasSticky) {
          await Keyword.update({ sticky }, { where: { ID: { [Op.in]: keywordIDs } } });
          const updateQuery = { where: { ID: { [Op.in]: keywordIDs } } };
          const updatedKeywords:Keyword[] = await Keyword.findAll(updateQuery);
@@ -220,7 +224,7 @@ const updateKeywords = async (req: NextApiRequest, res: NextApiResponse<Keywords
           keywords = parseKeywords(formattedKeywords);
          return res.status(200).json({ keywords });
       }
-      if (tags) {
+      if (hasTags && tags) {
          const tagsKeywordIDs = Object.keys(tags);
          const multipleKeywords = tagsKeywordIDs.length > 1;
          for (const keywordID of tagsKeywordIDs) {
@@ -230,6 +234,75 @@ const updateKeywords = async (req: NextApiRequest, res: NextApiResponse<Keywords
             if (selectedKeyword) {
                await selectedKeyword.update({ tags: JSON.stringify(multipleKeywords ? mergedTags : tags[keywordID]) });
             }
+         }
+         return res.status(200).json({ keywords });
+      }
+      if (hasSettings) {
+         if (settingsPayload && typeof settingsPayload !== 'object') {
+            return res.status(400).json({ error: 'Invalid settings payload!' });
+         }
+         const fetchSettings = settingsPayload as KeywordCustomSettings | undefined;
+         const keywordsToUpdate:Keyword[] = await Keyword.findAll({ where: { ID: { [Op.in]: keywordIDs } } });
+         const parsedKeywords = parseKeywords(keywordsToUpdate.map((item) => item.get({ plain: true })));
+         const keywordMap = new Map<number, Keyword>(keywordsToUpdate.map((item) => [item.ID, item]));
+
+         for (const parsedKeyword of parsedKeywords) {
+            const keywordInstance = keywordMap.get(parsedKeyword.ID);
+            if (keywordInstance) {
+               const nextSettings: KeywordCustomSettings = { ...(parsedKeyword.settings || {}) };
+               let settingsChanged = false;
+
+               if (fetchSettings && Object.prototype.hasOwnProperty.call(fetchSettings, 'fetchTop20')) {
+                  const enableTop20 = fetchSettings.fetchTop20 === true;
+                  if (enableTop20 && nextSettings.fetchTop20 !== true) {
+                     nextSettings.fetchTop20 = true;
+                     settingsChanged = true;
+                  }
+                  if (!enableTop20 && nextSettings.fetchTop20 === true) {
+                     delete nextSettings.fetchTop20;
+                     settingsChanged = true;
+                  }
+               }
+
+               if (fetchSettings) {
+                  const entries = Object.entries(fetchSettings)
+                     .filter(([settingKey]) => settingKey !== 'fetchTop20');
+                  for (const [key, value] of entries) {
+                     const typedKey = key as keyof KeywordCustomSettings;
+                     if (typedKey === 'serpPages') {
+                        if (value === undefined || value === null) {
+                           if (typeof nextSettings.serpPages !== 'undefined') {
+                              delete nextSettings.serpPages;
+                              settingsChanged = true;
+                           }
+                        } else if (typeof value === 'number' && nextSettings.serpPages !== value) {
+                           nextSettings.serpPages = value;
+                           settingsChanged = true;
+                        }
+                     } else if (value === undefined || value === null) {
+                        if (typedKey in nextSettings) {
+                           delete nextSettings[typedKey];
+                           settingsChanged = true;
+                        }
+                     } else if (nextSettings[typedKey] !== value) {
+                        const typedValue = value as KeywordCustomSettings[keyof KeywordCustomSettings];
+                        (nextSettings as Record<string, KeywordCustomSettings[keyof KeywordCustomSettings]>)[typedKey] = typedValue;
+                        settingsChanged = true;
+                     }
+                  }
+               }
+
+               const sanitizedSettings = Object.keys(nextSettings).length > 0 ? nextSettings : undefined;
+               if (settingsChanged) {
+                  await keywordInstance.update({ settings: sanitizedSettings ? JSON.stringify(sanitizedSettings) : null });
+               }
+            }
+         }
+
+         if (keywordIDs.length > 0) {
+            const updatedKeywords = await Keyword.findAll({ where: { ID: { [Op.in]: keywordIDs } } });
+            const formattedKeywords = updatedKeywords.map((el) => el.get({ plain: true }));
+            keywords = parseKeywords(formattedKeywords);
          }
          return res.status(200).json({ keywords });
       }

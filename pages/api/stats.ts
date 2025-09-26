@@ -1,62 +1,87 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { Op } from 'sequelize';
 import db from '../../database/database';
 import Domain from '../../database/models/domain';
 import DomainScrapeStat from '../../database/models/domainScrapeStat';
 import verifyUser from '../../utils/verifyUser';
 
- type StatsResponse = {
+type StatsResponse = {
    domains?: {
       domain: string,
       total: number,
-      currentMonth: number,
+      last30Days: number,
    }[],
    totals?: {
       totalScrapes: number,
-      currentMonth: number,
+      last30Days: number,
    },
    error?: string|null,
  };
 
-const startOfMonth = (date: Date): string => {
-   const year = date.getFullYear();
-   const month = `${date.getMonth() + 1}`.padStart(2, '0');
-   return `${year}-${month}`;
+const normalizeDomain = (domain: unknown): string => {
+   if (!domain) { return ''; }
+   if (typeof domain === 'string') { return domain.trim(); }
+   return `${domain}`.trim();
 };
 
 const aggregateStats = async (): Promise<{ domains: StatsResponse['domains'], totals: StatsResponse['totals'] }> => {
    const [domains, stats] = await Promise.all([
-      Domain.findAll(),
-      DomainScrapeStat.findAll(),
+      Domain.findAll({ raw: true }),
+      DomainScrapeStat.findAll({ raw: true }),
    ]);
 
    const now = new Date();
-   const currentMonthKey = startOfMonth(now);
+   const windowStart = new Date(now);
+   windowStart.setUTCHours(0, 0, 0, 0);
+   windowStart.setUTCDate(windowStart.getUTCDate() - 29);
 
-   const map = new Map<string, { total: number, currentMonth: number }>();
+   const map = new Map<string, { domain: string, total: number, last30Days: number }>();
    stats.forEach((record) => {
-      const key = startOfMonth(new Date(record.date));
-      const entry = map.get(record.domain) || { total: 0, currentMonth: 0 };
-      entry.total += record.count;
-      if (key === currentMonthKey) {
-         entry.currentMonth += record.count;
+      const domainName = normalizeDomain(record.domain);
+      if (!domainName) { return; }
+      const key = domainName.toLowerCase();
+      const entry = map.get(key) || { domain: domainName, total: 0, last30Days: 0 };
+      const countValue = typeof record.count === 'number'
+         ? record.count
+         : parseInt(`${record.count}`, 10) || 0;
+      entry.total += countValue;
+      const recordDate = record.date instanceof Date ? record.date : new Date(record.date);
+      if (!Number.isNaN(recordDate.getTime()) && recordDate >= windowStart) {
+         entry.last30Days += countValue;
       }
-      map.set(record.domain, entry);
+      if (!map.has(key)) {
+         entry.domain = domainName;
+      }
+      map.set(key, entry);
    });
 
    const domainStats = domains.map((domain) => {
-      const entry = map.get(domain.domain) || { total: 0, currentMonth: 0 };
+      const domainName = normalizeDomain(domain.domain);
+      const key = domainName.toLowerCase();
+      const entry = map.get(key);
       return {
-         domain: domain.domain,
-         total: entry.total,
-         currentMonth: entry.currentMonth,
+         domain: domainName,
+         total: entry?.total || 0,
+         last30Days: entry?.last30Days || 0,
       };
-   }).sort((a, b) => b.total - a.total);
+   });
 
-   const totals = domainStats.reduce((acc, item) => ({
+   map.forEach((entry, key) => {
+      const exists = domainStats.some((item) => item.domain.trim().toLowerCase() === key);
+      if (!exists) {
+         domainStats.push({
+            domain: entry.domain,
+            total: entry.total,
+            last30Days: entry.last30Days,
+         });
+      }
+   });
+
+   domainStats.sort((a, b) => b.total - a.total);
+
+   const totals = Array.from(map.values()).reduce((acc, item) => ({
       totalScrapes: acc.totalScrapes + item.total,
-      currentMonth: acc.currentMonth + item.currentMonth,
-   }), { totalScrapes: 0, currentMonth: 0 });
+      last30Days: acc.last30Days + item.last30Days,
+   }), { totalScrapes: 0, last30Days: 0 });
 
    return { domains: domainStats, totals };
 };

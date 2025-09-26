@@ -31,9 +31,10 @@ const Sidebar = ({ domains, showAddModal } : SidebarProps) => {
       });
    };
 
+   const baseClasses = 'sidebar relative hidden lg:flex flex-col h-[calc(100vh-5rem)]';
    const containerClasses = collapsed
-      ? 'sidebar relative pt-6 w-[72px] hidden lg:block text-center'
-      : 'sidebar relative pt-44 w-1/5 hidden lg:block';
+      ? `${baseClasses} pt-6 w-[72px] text-center`
+      : `${baseClasses} pt-44 w-1/5`;
 
    const isDomainActive = (slug: string) => (
       `/domain/${slug}` === router.asPath
@@ -56,10 +57,10 @@ const Sidebar = ({ domains, showAddModal } : SidebarProps) => {
          </button>
          {!collapsed && (
             <h3 className="py-7 text-base font-bold text-blue-700">
-               <span className=' relative top-[3px] mr-1'><Icon type="logo" size={24} color="#364AFF" /></span> SerpBear
+               <span className=' relative top-[3px] mr-1'><Icon type="logo" size={24} color="#364AFF" /></span> Kiwibear
             </h3>
          )}
-         <div className={`sidebar_menu max-h-96 overflow-auto styled-scrollbar ${collapsed ? 'mt-10' : ''}`}>
+         <div className={`sidebar_menu flex-1 overflow-y-auto styled-scrollbar ${collapsed ? 'mt-10' : ''}`}>
             <ul className=' font-medium text-sm'>
                {domains.map((d) => {
                   const isActive = isDomainActive(d.slug);
@@ -89,7 +90,7 @@ const Sidebar = ({ domains, showAddModal } : SidebarProps) => {
             </ul>
          </div>
          {!collapsed && (
-            <div className='sidebar_add border-t font-semibold text-sm text-center mt-6 w-[80%] ml-3 text-zinc-500'>
+            <div className='sidebar_add border-t font-semibold text-sm text-center mt-auto w-[80%] ml-3 text-zinc-500 pt-6'>
                <button data-testid="add_domain" onClick={() => showAddModal(true)} className='p-4 hover:text-blue-600'>+ Add Domain</button>
             </div>
          )}

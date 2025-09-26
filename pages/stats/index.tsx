@@ -21,7 +21,7 @@ const StatsPage = () => {
    const { data: statsData, isLoading: statsLoading } = useFetchGlobalStats();
 
    const domains = domainsData?.domains || [];
-   const stats = statsData || { domains: [], totals: { totalScrapes: 0, currentMonth: 0 } };
+   const stats = statsData || { domains: [], totals: { totalScrapes: 0, last30Days: 0 } };
 
    return (
       <div className="Domain ">
@@ -51,8 +51,8 @@ const StatsPage = () => {
                            <p className='text-2xl font-semibold text-slate-700 mt-1'>{stats.totals.totalScrapes}</p>
                         </div>
                         <div className='p-4 bg-white border border-slate-200 rounded-lg shadow-sm'>
-                           <span className='text-xs uppercase tracking-wide text-slate-500'>Este mes</span>
-                           <p className='text-2xl font-semibold text-slate-700 mt-1'>{stats.totals.currentMonth}</p>
+                           <span className='text-xs uppercase tracking-wide text-slate-500'>Últimos 30 días</span>
+                           <p className='text-2xl font-semibold text-slate-700 mt-1'>{stats.totals.last30Days}</p>
                         </div>
                      </div>
 
@@ -67,7 +67,7 @@ const StatsPage = () => {
                                  <tr>
                                     <th className='text-left px-4 py-2'>Dominio</th>
                                     <th className='text-left px-4 py-2'>Total</th>
-                                    <th className='text-left px-4 py-2'>Este mes</th>
+                                    <th className='text-left px-4 py-2'>Últimos 30 días</th>
                                  </tr>
                               </thead>
                               <tbody>
@@ -80,7 +80,7 @@ const StatsPage = () => {
                                     <tr key={item.domain} className='border-t border-slate-100 hover:bg-slate-50 transition'>
                                        <td className='px-4 py-2 font-semibold text-slate-700'>{item.domain}</td>
                                        <td className='px-4 py-2'>{item.total}</td>
-                                       <td className='px-4 py-2'>{item.currentMonth}</td>
+                                       <td className='px-4 py-2'>{item.last30Days}</td>
                                     </tr>
                                  ))}
                               </tbody>

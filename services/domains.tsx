@@ -88,8 +88,8 @@ export function useFetchDomainStats(domainName:string) {
 }
 
 export type GlobalStatsResponse = {
-   domains: { domain: string, total: number, currentMonth: number }[],
-   totals: { totalScrapes: number, currentMonth: number },
+   domains: { domain: string, total: number, last30Days: number }[],
+   totals: { totalScrapes: number, last30Days: number },
 };
 
 export async function fetchGlobalStats(): Promise<GlobalStatsResponse> {

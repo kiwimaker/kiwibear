@@ -110,7 +110,7 @@ type DomainStatsMonthlyItem = {
 
 type DomainStatsType = {
    total: number,
-   currentMonth: number,
+   last30Days: number,
    monthly: DomainStatsMonthlyItem[],
 }
 

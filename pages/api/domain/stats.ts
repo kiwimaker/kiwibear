@@ -17,19 +17,24 @@ const startOfMonth = (date: Date): string => {
 const getDomainStats = async (domain: string): Promise<DomainStatsType> => {
    const records = await DomainScrapeStat.findAll({ where: { domain } });
    let total = 0;
-   let currentMonthCount = 0;
+   let last30DaysCount = 0;
    const monthlyMap: Record<string, number> = {};
 
    const now = new Date();
-   const currentMonthKey = startOfMonth(now);
+   const windowStart = new Date(now);
+   windowStart.setUTCHours(0, 0, 0, 0);
+   windowStart.setUTCDate(windowStart.getUTCDate() - 29);
 
    records.forEach((record) => {
-      total += record.count;
-      const recordDate = new Date(record.date);
+      const countValue = typeof record.count === 'number'
+         ? record.count
+         : parseInt(`${record.count}`, 10) || 0;
+      total += countValue;
+      const recordDate = record.date instanceof Date ? record.date : new Date(record.date);
       const monthKey = startOfMonth(recordDate);
-      monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + record.count;
-      if (monthKey === currentMonthKey) {
-         currentMonthCount += record.count;
+      monthlyMap[monthKey] = (monthlyMap[monthKey] || 0) + countValue;
+      if (!Number.isNaN(recordDate.getTime()) && recordDate >= windowStart) {
+         last30DaysCount += countValue;
       }
    });
 
@@ -39,7 +44,7 @@ const getDomainStats = async (domain: string): Promise<DomainStatsType> => {
 
    return {
       total,
-      currentMonth: currentMonthCount,
+      last30Days: last30DaysCount,
       monthly,
    };
 };

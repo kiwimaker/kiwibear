@@ -87,21 +87,46 @@ export function useFetchDomainStats(domainName:string) {
    return useQuery(['domain-stats', domainName], () => fetchDomainStats(domainName));
 }
 
+export type StatsMismatch = {
+   domain: string,
+   statsTotal: number,
+   logsTotal: number,
+   totalDiff: number,
+   statsLast30Days: number,
+   logsLast30Days: number,
+   lastLogAt: string | null,
+   possibleCause?: string,
+};
+
+export type StatsDiagnostics = {
+   generatedAt: string,
+   mismatches: StatsMismatch[],
+   totalsComparison: {
+      statsTotal: number,
+      logsTotal: number,
+      statsLast30Days: number,
+      logsLast30Days: number,
+   },
+   notes: string[],
+};
+
 export type GlobalStatsResponse = {
    domains: { domain: string, total: number, last30Days: number }[],
    totals: { totalScrapes: number, last30Days: number },
+   diagnostics?: StatsDiagnostics,
 };
 
-export async function fetchGlobalStats(): Promise<GlobalStatsResponse> {
-   const res = await fetch(`${window.location.origin}/api/stats`, { method: 'GET' });
+export async function fetchGlobalStats(includeDiagnostics = false): Promise<GlobalStatsResponse> {
+   const query = includeDiagnostics ? '?diagnostics=true' : '';
+   const res = await fetch(`${window.location.origin}/api/stats${query}`, { method: 'GET' });
    if (res.status >= 400 && res.status < 600) {
       throw new Error('Bad response from server');
    }
    return res.json();
 }
 
-export function useFetchGlobalStats() {
-   return useQuery('global-stats', fetchGlobalStats);
+export function useFetchGlobalStats(includeDiagnostics = false) {
+   return useQuery(['global-stats', includeDiagnostics], () => fetchGlobalStats(includeDiagnostics));
 }
 
 type DomainScrapeLogResponse = {
@@ -154,6 +179,32 @@ export function useClearDomainScrapeLogs(domain?: string) {
       onError: (error) => {
          console.log('[ERROR] Clearing domain scrape logs', error);
          toast('No se pudo eliminar la actividad reciente.', { icon: '⚠️' });
+      },
+   });
+}
+
+export function useResetDomainScrapeStats() {
+   const queryClient = useQueryClient();
+   return useMutation(async (domain: string) => {
+      if (!domain) {
+         throw new Error('Domain is required to reset stats');
+      }
+      const searchParams = new URLSearchParams({ domain });
+      const res = await fetch(`${window.location.origin}/api/domain/stats?${searchParams.toString()}`, { method: 'DELETE' });
+      const response = await res.json();
+      if (!res.ok) {
+         throw new Error(response?.error || 'Error resetting domain stats');
+      }
+      return response;
+   }, {
+      onSuccess: () => {
+         toast('Estadísticas del dominio reiniciadas.', { icon: '✔️' });
+         queryClient.invalidateQueries('global-stats');
+         queryClient.invalidateQueries('domain-stats');
+      },
+      onError: (error) => {
+         console.log('[ERROR] Resetting domain stats', error);
+         toast('No se pudieron reiniciar las estadísticas.', { icon: '⚠️' });
       },
    });
 }

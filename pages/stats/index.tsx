@@ -9,7 +9,13 @@ import Settings from '../../components/settings/Settings';
 import Footer from '../../components/common/Footer';
 import Icon from '../../components/common/Icon';
 import Modal from '../../components/common/Modal';
-import { useFetchDomains, useFetchGlobalStats, useFetchDomainScrapeLogs, useClearDomainScrapeLogs } from '../../services/domains';
+import {
+   useFetchDomains,
+   useFetchGlobalStats,
+   useFetchDomainScrapeLogs,
+   useClearDomainScrapeLogs,
+   useResetDomainScrapeStats,
+} from '../../services/domains';
 import { useFetchSettings } from '../../services/settings';
 
 const StatsPage = () => {
@@ -17,15 +23,25 @@ const StatsPage = () => {
    const [showAddDomain, setShowAddDomain] = React.useState(false);
    const [showDomainSettings, setShowDomainSettings] = React.useState<DomainType | false>(false);
    const [showSettings, setShowSettings] = React.useState(false);
+   const [pendingResetDomain, setPendingResetDomain] = React.useState<string | null>(null);
    const [showConfirmClearLogs, setShowConfirmClearLogs] = React.useState(false);
    const { data: appSettingsData, isLoading: isAppSettingsLoading } = useFetchSettings();
    const { data: domainsData } = useFetchDomains(router, false);
-   const { data: statsData, isLoading: statsLoading } = useFetchGlobalStats();
+   const { data: statsData, isLoading: statsLoading } = useFetchGlobalStats(true);
    const { data: logsData, isLoading: logsLoading } = useFetchDomainScrapeLogs(undefined, 100);
    const { mutate: clearLogs, isLoading: isClearingLogs } = useClearDomainScrapeLogs();
+   const { mutate: resetDomainStats, isLoading: isResettingDomainStats } = useResetDomainScrapeStats();
 
    const domains = domainsData?.domains || [];
    const stats = statsData || { domains: [], totals: { totalScrapes: 0, last30Days: 0 } };
+   const diagnostics = statsData?.diagnostics;
+   const mismatches = diagnostics?.mismatches || [];
+   const hasMismatches = mismatches.length > 0;
+   const diagnosticsContainerClasses = `${hasMismatches
+      ? 'border-amber-300 bg-amber-50'
+      : 'border-emerald-200 bg-emerald-50'} border rounded-lg p-4`;
+   const destructiveActionButtonClasses = 'text-xs font-semibold text-rose-600 hover:text-rose-700 '
+      + 'disabled:opacity-50 disabled:cursor-not-allowed';
    const logs = logsData?.logs || [];
    const totalLogCount = logsData?.stats?.totalCount || 0;
    const totalLogSize = logsData?.stats?.totalSizeBytes || 0;
@@ -60,6 +76,25 @@ const StatsPage = () => {
       setShowConfirmClearLogs(false);
    }, [clearLogs, isClearingLogs, totalLogCount]);
 
+   const handleRequestDomainReset = React.useCallback((domain: string) => {
+      if (!domain || isResettingDomainStats) { return; }
+      setPendingResetDomain(domain);
+   }, [isResettingDomainStats]);
+
+   const cancelDomainReset = React.useCallback(() => {
+      if (isResettingDomainStats) { return; }
+      setPendingResetDomain(null);
+   }, [isResettingDomainStats]);
+
+   const confirmDomainReset = React.useCallback(() => {
+      if (!pendingResetDomain || isResettingDomainStats) { return; }
+      resetDomainStats(pendingResetDomain, {
+         onSuccess: () => {
+            setPendingResetDomain(null);
+         },
+      });
+   }, [isResettingDomainStats, pendingResetDomain, resetDomainStats]);
+
    return (
       <div className="Domain ">
          {((!appSettingsData?.settings?.scraper_type || (appSettingsData?.settings?.scraper_type === 'none')) && !isAppSettingsLoading) && (
@@ -82,6 +117,85 @@ const StatsPage = () => {
                   <p className='text-sm text-slate-500'>Cargando estadísticas…</p>
                ) : (
                   <div className='space-y-6'>
+                     {diagnostics && (
+                        <div className={diagnosticsContainerClasses}>
+                           <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+                              <div className='flex items-start gap-3'>
+                                 <Icon
+                                 type={hasMismatches ? 'error' : 'check'}
+                                 size={18}
+                                 classes={hasMismatches ? 'text-amber-600' : 'text-emerald-600'}
+                                 />
+                                 <div>
+                                    <p className='text-sm font-semibold text-slate-700'>
+                                       {hasMismatches
+                                          ? 'Se detectaron discrepancias entre las estadísticas y los logs.'
+                                          : 'No se detectaron discrepancias entre las estadísticas y los logs.'}
+                                    </p>
+                                    <p className='mt-1 text-xs text-slate-500'>
+                                       Última comprobación:
+                                       {' '}
+                                       {new Date(diagnostics.generatedAt).toLocaleString()}
+                                    </p>
+                                 </div>
+                              </div>
+                              <div className='grid grid-cols-2 gap-2 text-xs text-slate-600 md:text-right'>
+                                 <div>
+                                    <span className='block font-semibold text-slate-700'>Total stats</span>
+                                    {diagnostics.totalsComparison.statsTotal}
+                                 </div>
+                                 <div>
+                                    <span className='block font-semibold text-slate-700'>Total logs</span>
+                                    {diagnostics.totalsComparison.logsTotal}
+                                 </div>
+                                 <div>
+                                    <span className='block font-semibold text-slate-700'>30 días stats</span>
+                                    {diagnostics.totalsComparison.statsLast30Days}
+                                 </div>
+                                 <div>
+                                    <span className='block font-semibold text-slate-700'>30 días logs</span>
+                                    {diagnostics.totalsComparison.logsLast30Days}
+                                 </div>
+                              </div>
+                           </div>
+                           {hasMismatches && (
+                              <div className='mt-4 overflow-x-auto'>
+                                 <table className='min-w-full text-xs'>
+                                 <thead className='bg-white/60 text-left uppercase tracking-wide text-slate-500'>
+                                    <tr>
+                                       <th className='px-3 py-2'>Dominio</th>
+                                       <th className='px-3 py-2'>Total stats</th>
+                                       <th className='px-3 py-2'>Total logs</th>
+                                          <th className='px-3 py-2'>Diferencia</th>
+                                          <th className='px-3 py-2'>30 días stats</th>
+                                          <th className='px-3 py-2'>30 días logs</th>
+                                          <th className='px-3 py-2'>Último log</th>
+                                          <th className='px-3 py-2'>Posible causa</th>
+                                       </tr>
+                                    </thead>
+                                    <tbody>
+                                       {mismatches.map((item) => (
+                                          <tr key={item.domain} className='border-t border-slate-200 bg-white/40 backdrop-blur'>
+                                             <td className='px-3 py-2 font-semibold text-slate-700'>{item.domain}</td>
+                                             <td className='px-3 py-2 text-slate-600'>{item.statsTotal}</td>
+                                             <td className='px-3 py-2 text-slate-600'>{item.logsTotal}</td>
+                                             <td className='px-3 py-2 text-slate-600'>
+                                                {item.totalDiff > 0 ? `+${item.totalDiff}` : item.totalDiff}
+                                             </td>
+                                             <td className='px-3 py-2 text-slate-600'>{item.statsLast30Days}</td>
+                                             <td className='px-3 py-2 text-slate-600'>{item.logsLast30Days}</td>
+                                             <td className='px-3 py-2 text-slate-600'>
+                                                {item.lastLogAt ? new Date(item.lastLogAt).toLocaleString() : '—'}
+                                             </td>
+                                             <td className='px-3 py-2 text-slate-600'>{item.possibleCause || 'Sin determinar'}</td>
+                                          </tr>
+                                       ))}
+                                    </tbody>
+                                 </table>
+                              </div>
+                           )}
+                        </div>
+                     )}
                      <div className='grid md:grid-cols-2 gap-4'>
                         <div className='p-4 bg-white border border-slate-200 rounded-lg shadow-sm'>
                            <span className='text-xs uppercase tracking-wide text-slate-500'>Total scrapes</span>
@@ -105,21 +219,34 @@ const StatsPage = () => {
                                     <th className='text-left px-4 py-2'>Dominio</th>
                                     <th className='text-left px-4 py-2'>Total</th>
                                     <th className='text-left px-4 py-2'>Últimos 30 días</th>
+                                    <th className='text-left px-4 py-2'>Acciones</th>
                                  </tr>
                               </thead>
                               <tbody>
                                  {stats.domains.length === 0 && (
                                     <tr>
-                                       <td className='px-4 py-3 text-slate-500 text-sm' colSpan={3}>Todavía no hay registros.</td>
+                                       <td className='px-4 py-3 text-slate-500 text-sm' colSpan={4}>Todavía no hay registros.</td>
                                     </tr>
                                  )}
-                                 {stats.domains.map((item) => (
-                                    <tr key={item.domain} className='border-t border-slate-100 hover:bg-slate-50 transition'>
-                                       <td className='px-4 py-2 font-semibold text-slate-700'>{item.domain}</td>
-                                       <td className='px-4 py-2'>{item.total}</td>
-                                       <td className='px-4 py-2'>{item.last30Days}</td>
-                                    </tr>
-                                 ))}
+                                 {stats.domains.map((item) => {
+                                    const isDomainResetting = isResettingDomainStats && pendingResetDomain === item.domain;
+                                    return (
+                                       <tr key={item.domain} className='border-t border-slate-100 hover:bg-slate-50 transition'>
+                                          <td className='px-4 py-2 font-semibold text-slate-700'>{item.domain}</td>
+                                          <td className='px-4 py-2'>{item.total}</td>
+                                          <td className='px-4 py-2'>{item.last30Days}</td>
+                                          <td className='px-4 py-2'>
+                                             <button
+                                                type='button'
+                                                className={destructiveActionButtonClasses}
+                                                onClick={() => handleRequestDomainReset(item.domain)}
+                                                disabled={isDomainResetting}>
+                                                {isDomainResetting ? 'Reiniciando…' : 'Reiniciar'}
+                                             </button>
+                                          </td>
+                                       </tr>
+                                    );
+                                 })}
                               </tbody>
                            </table>
                         </div>
@@ -134,15 +261,15 @@ const StatsPage = () => {
                               <Icon type='clock' size={16} />
                               Actividad reciente de scrapes
                            </span>
-                           <div className='flex items-center gap-4 text-xs font-normal text-slate-500'>
-                              <span>{logSummary}</span>
-                              <button
-                              type='button'
-                              className='text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                              onClick={handleRequestClearLogs}
-                              disabled={isClearingLogs || totalLogCount === 0}>
-                                 {isClearingLogs ? 'Eliminando…' : 'Borrar actividad'}
-                              </button>
+                              <div className='flex items-center gap-4 text-xs font-normal text-slate-500'>
+                                 <span>{logSummary}</span>
+                                 <button
+                                    type='button'
+                                    className={destructiveActionButtonClasses}
+                                    onClick={handleRequestClearLogs}
+                                    disabled={isClearingLogs || totalLogCount === 0}>
+                                    {isClearingLogs ? 'Eliminando…' : 'Borrar actividad'}
+                                 </button>
                            </div>
                         </div>
                         {logsLoading ? (
@@ -207,6 +334,33 @@ const StatsPage = () => {
          </CSSTransition>
          <CSSTransition in={showSettings} timeout={300} classNames="settings_anim" unmountOnExit mountOnEnter>
              <Settings closeSettings={() => setShowSettings(false)} />
+         </CSSTransition>
+         <CSSTransition in={!!pendingResetDomain} timeout={300} classNames="modal_anim" unmountOnExit mountOnEnter>
+            <Modal closeModal={cancelDomainReset} title='Reiniciar estadísticas del dominio'>
+               <p className='text-sm text-slate-600'>
+                  Esta acción pondrá en cero las estadísticas registradas para
+                  {' '}
+                  <span className='font-semibold text-slate-800'>{pendingResetDomain}</span>
+                  . Los logs permanecerán disponibles.
+               </p>
+               <div className='mt-4 flex justify-end gap-3'>
+                  <button
+                  type='button'
+                  className='px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-800'
+                  onClick={cancelDomainReset}
+                  disabled={isResettingDomainStats}>
+                     Cancelar
+                  </button>
+                  <button
+                  type='button'
+                  className={'px-3 py-2 text-sm font-semibold text-white bg-rose-600 rounded-md hover:bg-rose-700 '
+                  + 'disabled:opacity-60 disabled:cursor-not-allowed'}
+                  onClick={confirmDomainReset}
+                  disabled={isResettingDomainStats}>
+                     {isResettingDomainStats ? 'Reiniciando…' : 'Sí, reiniciar'}
+                  </button>
+               </div>
+            </Modal>
          </CSSTransition>
          <CSSTransition in={showConfirmClearLogs} timeout={300} classNames="modal_anim" unmountOnExit mountOnEnter>
             <Modal closeModal={cancelClearLogs} title='Borrar actividad reciente'>

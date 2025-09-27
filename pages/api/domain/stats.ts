@@ -5,6 +5,9 @@ import verifyUser from '../../../utils/verifyUser';
 
 type DomainStatsResponse = {
    stats?: DomainStatsType,
+   reset?: {
+      deleted: number,
+   },
    error?: string|null,
 };
 
@@ -49,13 +52,25 @@ const getDomainStats = async (domain: string): Promise<DomainStatsType> => {
    };
 };
 
+const normalizeDomain = (value: unknown): string => {
+   if (!value) { return ''; }
+   if (typeof value === 'string') { return value.trim(); }
+   return `${value}`.trim();
+};
+
+const resetDomainStats = async (domain: string): Promise<number> => {
+   const normalized = normalizeDomain(domain);
+   if (!normalized) {
+      throw new Error('Domain is required to reset stats');
+   }
+   const deleted = await DomainScrapeStat.destroy({ where: { domain: normalized } });
+   return deleted;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<DomainStatsResponse>) {
    const authorized = verifyUser(req, res);
    if (authorized !== 'authorized') {
       return res.status(401).json({ error: authorized });
-   }
-   if (req.method !== 'GET') {
-      return res.status(405).json({ error: 'Method Not Allowed' });
    }
    if (!req.query.domain || typeof req.query.domain !== 'string') {
       return res.status(400).json({ error: 'Domain is required' });
@@ -64,10 +79,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
    await db.sync();
 
    try {
-      const stats = await getDomainStats(req.query.domain);
-      return res.status(200).json({ stats });
+      if (req.method === 'GET') {
+         const stats = await getDomainStats(req.query.domain);
+         return res.status(200).json({ stats });
+      }
+
+      if (req.method === 'DELETE') {
+         const deleted = await resetDomainStats(req.query.domain);
+         return res.status(200).json({ reset: { deleted } });
+      }
+
+      return res.status(405).json({ error: 'Method Not Allowed' });
    } catch (error) {
-      console.log('[ERROR] Getting Domain Stats: ', error);
-      return res.status(400).json({ error: 'Error loading domain stats.' });
+      console.log('[ERROR] Domain stats handler: ', error);
+      return res.status(400).json({ error: 'Error procesando estadísticas del dominio.' });
    }
 }

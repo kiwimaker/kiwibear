@@ -8,6 +8,7 @@ import DomainSettings from '../../components/domains/DomainSettings';
 import Settings from '../../components/settings/Settings';
 import Footer from '../../components/common/Footer';
 import Icon from '../../components/common/Icon';
+import Modal from '../../components/common/Modal';
 import { useFetchDomains, useFetchGlobalStats, useFetchDomainScrapeLogs, useClearDomainScrapeLogs } from '../../services/domains';
 import { useFetchSettings } from '../../services/settings';
 
@@ -16,6 +17,7 @@ const StatsPage = () => {
    const [showAddDomain, setShowAddDomain] = React.useState(false);
    const [showDomainSettings, setShowDomainSettings] = React.useState<DomainType | false>(false);
    const [showSettings, setShowSettings] = React.useState(false);
+   const [showConfirmClearLogs, setShowConfirmClearLogs] = React.useState(false);
    const { data: appSettingsData, isLoading: isAppSettingsLoading } = useFetchSettings();
    const { data: domainsData } = useFetchDomains(router, false);
    const { data: statsData, isLoading: statsLoading } = useFetchGlobalStats();
@@ -42,11 +44,20 @@ const StatsPage = () => {
       return `${countLabel} · ${humanReadableSize}`;
    }, [humanReadableSize, totalLogCount]);
 
-   const handleClearLogs = React.useCallback(() => {
+   const handleRequestClearLogs = React.useCallback(() => {
       if (isClearingLogs || totalLogCount === 0) { return; }
-      const confirmClear = window.confirm('¿Seguro que quieres eliminar toda la actividad reciente?');
-      if (!confirmClear) { return; }
+      setShowConfirmClearLogs(true);
+   }, [isClearingLogs, totalLogCount]);
+
+   const cancelClearLogs = React.useCallback(() => {
+      if (isClearingLogs) { return; }
+      setShowConfirmClearLogs(false);
+   }, [isClearingLogs]);
+
+   const confirmClearLogs = React.useCallback(() => {
+      if (isClearingLogs || totalLogCount === 0) { return; }
       clearLogs();
+      setShowConfirmClearLogs(false);
    }, [clearLogs, isClearingLogs, totalLogCount]);
 
    return (
@@ -115,7 +126,10 @@ const StatsPage = () => {
                      </div>
 
                      <div className='border border-slate-200 rounded-lg bg-white'>
-                        <div className='px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-sm font-semibold text-slate-600'>
+                        <div
+                           className={'px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between '
+                           + 'gap-3 text-sm font-semibold text-slate-600'}
+                        >
                            <span className='flex items-center gap-2'>
                               <Icon type='clock' size={16} />
                               Actividad reciente de scrapes
@@ -125,7 +139,7 @@ const StatsPage = () => {
                               <button
                               type='button'
                               className='text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed'
-                              onClick={handleClearLogs}
+                              onClick={handleRequestClearLogs}
                               disabled={isClearingLogs || totalLogCount === 0}>
                                  {isClearingLogs ? 'Eliminando…' : 'Borrar actividad'}
                               </button>
@@ -193,6 +207,28 @@ const StatsPage = () => {
          </CSSTransition>
          <CSSTransition in={showSettings} timeout={300} classNames="settings_anim" unmountOnExit mountOnEnter>
              <Settings closeSettings={() => setShowSettings(false)} />
+         </CSSTransition>
+         <CSSTransition in={showConfirmClearLogs} timeout={300} classNames="modal_anim" unmountOnExit mountOnEnter>
+            <Modal closeModal={cancelClearLogs} title='Borrar actividad reciente'>
+               <p className='text-sm text-slate-600'>Esta acción eliminará los logs recientes. ¿Quieres continuar?</p>
+               <div className='mt-4 flex justify-end gap-3'>
+                  <button
+                  type='button'
+                  className='px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-800'
+                  onClick={cancelClearLogs}
+                  disabled={isClearingLogs}>
+                     Cancelar
+                  </button>
+                  <button
+                  type='button'
+                  className={'px-3 py-2 text-sm font-semibold text-white bg-rose-600 rounded-md hover:bg-rose-700 '
+                  + 'disabled:opacity-60 disabled:cursor-not-allowed'}
+                  onClick={confirmClearLogs}
+                  disabled={isClearingLogs || totalLogCount === 0}>
+                     {isClearingLogs ? 'Eliminando…' : 'Sí, eliminar'}
+                  </button>
+               </div>
+            </Modal>
          </CSSTransition>
          <Footer currentVersion={appSettingsData?.settings?.version ? appSettingsData.settings.version : ''} />
       </div>

@@ -114,7 +114,12 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
                      text-gray-600 border border-b-0 relative top-[1px] rounded-b-none`;
    return (
       <div>
-         <Modal closeModal={() => closeModal(false)} title={'Domain Settings'} width="[500px]" verticalCenter={currentTab === 'searchconsole'} >
+         <Modal
+         closeModal={() => closeModal(false)}
+         title={'Domain Settings'}
+         width="[640px]"
+         desktopWidthClass='lg:max-w-2xl'
+         verticalCenter={currentTab === 'searchconsole'} >
             <div data-testid="domain_settings" className=" text-sm">
                <div className=' mt-3 mb-5 border  border-slate-200 px-2 py-4 pb-0
                relative left-[-20px] w-[calc(100%+40px)] border-l-0 border-r-0 bg-[#f8f9ff]'>

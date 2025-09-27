@@ -137,16 +137,16 @@ const computeDiagnostics = async (domainStats: StatsResponse['domains']): Promis
       DomainScrapeLog.findAll({
          raw: true,
          attributes: [
-            'domain',
+            [fn('LOWER', fn('TRIM', col('domain'))), 'domainKey'],
             [fn('SUM', col('requests')), 'totalRequests'],
             [fn('MAX', col('createdAt')), 'lastLogAt'],
          ],
-         group: ['domain'],
+         group: [fn('LOWER', fn('TRIM', col('domain')))],
       }),
       DomainScrapeLog.findAll({
          raw: true,
          attributes: [
-            'domain',
+            [fn('LOWER', fn('TRIM', col('domain'))), 'domainKey'],
             [fn('SUM', col('requests')), 'windowRequests'],
          ],
          where: {
@@ -154,24 +154,24 @@ const computeDiagnostics = async (domainStats: StatsResponse['domains']): Promis
                [Op.gte]: windowStart,
             },
          },
-         group: ['domain'],
+         group: [fn('LOWER', fn('TRIM', col('domain')))],
       }),
    ]);
 
    const logTotalsMap = new Map<string, { total: number, lastLogAt: string | null, label: string }>();
    logTotals.forEach((entry: any) => {
-      const domainName = normalizeDomain(entry.domain);
-      const key = domainName.toLowerCase();
+      const domainKey = normalizeDomain(entry.domainKey);
+      const key = domainKey.toLowerCase();
       if (!key) { return; }
       const totalRequests = Number(entry.totalRequests) || 0;
       const lastLogAt = entry.lastLogAt ? new Date(entry.lastLogAt).toISOString() : null;
-      logTotalsMap.set(key, { total: totalRequests, lastLogAt, label: domainName });
+      logTotalsMap.set(key, { total: totalRequests, lastLogAt, label: domainKey });
    });
 
    const logWindowMap = new Map<string, number>();
    logWindowTotals.forEach((entry: any) => {
-      const domainName = normalizeDomain(entry.domain);
-      const key = domainName.toLowerCase();
+      const domainKey = normalizeDomain(entry.domainKey);
+      const key = domainKey.toLowerCase();
       if (!key) { return; }
       const winTotal = Number(entry.windowRequests) || 0;
       logWindowMap.set(key, winTotal);

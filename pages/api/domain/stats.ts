@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { fn, col, Op } from 'sequelize';
 import db from '../../../database/database';
 import DomainScrapeStat from '../../../database/models/domainScrapeStat';
 import DomainScrapeLog from '../../../database/models/domainScrapeLog';
@@ -23,7 +24,24 @@ const startOfMonth = (date: Date): string => {
 };
 
 const getDomainStats = async (domain: string): Promise<DomainStatsType> => {
-   const records = await DomainScrapeStat.findAll({ where: { domain } });
+   // Normalize domain and get both variants
+   const normalized = normalizeDomain(domain);
+   if (!normalized) {
+      throw new Error('Invalid domain');
+   }
+
+   const domainVariants = [normalized];
+   if (!normalized.startsWith('www.')) {
+      domainVariants.push(`www.${normalized}`);
+   }
+
+   // Get stats for both domain variants
+   const records = await DomainScrapeStat.findAll({
+      where: {
+         domain: domainVariants,
+      },
+   });
+
    let total = 0;
    let last30DaysCount = 0;
    const monthlyMap: Record<string, number> = {};
@@ -59,8 +77,12 @@ const getDomainStats = async (domain: string): Promise<DomainStatsType> => {
 
 const normalizeDomain = (value: unknown): string => {
    if (!value) { return ''; }
-   if (typeof value === 'string') { return value.trim(); }
-   return `${value}`.trim();
+   const raw = typeof value === 'string' ? value : `${value}`;
+   const trimmed = raw.trim().toLowerCase();
+   if (trimmed.startsWith('www.')) {
+      return trimmed.slice(4);
+   }
+   return trimmed;
 };
 
 const resetDomainStats = async (domain: string): Promise<number> => {
@@ -68,7 +90,20 @@ const resetDomainStats = async (domain: string): Promise<number> => {
    if (!normalized) {
       throw new Error('Domain is required to reset stats');
    }
-   const deleted = await DomainScrapeStat.destroy({ where: { domain: normalized } });
+   const domainVariants = [normalized];
+   if (!normalized.startsWith('www.')) {
+      domainVariants.push(`www.${normalized}`);
+   }
+   const sequelizeInstance = DomainScrapeStat.sequelize;
+   const destroyWhere = sequelizeInstance
+      ? {
+         [Op.or]: domainVariants.map((variant) => sequelizeInstance.where(
+            fn('LOWER', fn('TRIM', col('domain'))),
+            variant,
+         )),
+      }
+      : { domain: domainVariants };
+   const deleted = await DomainScrapeStat.destroy({ where: destroyWhere });
    return deleted;
 };
 
@@ -78,8 +113,25 @@ const rebuildDomainStatsFromLogs = async (domain: string): Promise<{ inserted: n
       throw new Error('Domain is required to rebuild stats');
    }
 
+    const domainVariants = [normalized];
+    if (!normalized.startsWith('www.')) {
+       domainVariants.push(`www.${normalized}`);
+    }
+
+   const sequelizeInstance = DomainScrapeLog.sequelize;
+   const domainCondition = sequelizeInstance
+      ? {
+         [Op.or]: domainVariants.map((variant) => sequelizeInstance.where(
+            fn('LOWER', fn('TRIM', col('domain'))),
+            variant,
+         )),
+      }
+      : {
+         domain: domainVariants,
+      };
+
    const logs = await DomainScrapeLog.findAll({
-      where: { domain: normalized },
+      where: domainCondition,
       raw: true,
       attributes: ['createdAt', 'requests'],
    });
@@ -107,9 +159,44 @@ const rebuildDomainStatsFromLogs = async (domain: string): Promise<{ inserted: n
       count,
    }));
 
-   await DomainScrapeStat.destroy({ where: { domain: normalized } });
+   const sequelizeInstanceStats = DomainScrapeStat.sequelize;
+   const destroyWhere = sequelizeInstanceStats
+      ? {
+         [Op.or]: domainVariants.map((variant) => sequelizeInstanceStats.where(
+            fn('LOWER', fn('TRIM', col('domain'))),
+            variant,
+         )),
+      }
+      : { domain: domainVariants };
+   await DomainScrapeStat.destroy({ where: destroyWhere });
    if (payload.length > 0) {
-      await DomainScrapeStat.bulkCreate(payload);
+      for (const entry of payload) {
+         try {
+            // Use the original domain from the logs (which already includes www. if present)
+            const recordPayload = {
+               domain: normalized,
+               date: entry.date,
+               count: entry.count,
+            };
+            const [record, created] = await DomainScrapeStat.findOrCreate({
+               where: {
+                  domain: normalized,
+                  date: entry.date,
+               },
+               defaults: recordPayload,
+            });
+            if (!created) {
+               // If record exists, update with the sum of counts
+               await record.update({ count: record.count + entry.count });
+            }
+         } catch (error) {
+            console.log('[ERROR] upsert domain stat entry', {
+               domain: normalized,
+               entry,
+            }, error);
+            throw error;
+         }
+      }
    }
 
    const totalRequests = payload.reduce((acc, item) => acc + item.count, 0);
@@ -144,8 +231,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
 
       return res.status(405).json({ error: 'Method Not Allowed' });
-   } catch (error) {
+   } catch (error: unknown) {
       console.log('[ERROR] Domain stats handler: ', error);
-      return res.status(400).json({ error: 'Error procesando estadísticas del dominio.' });
+      if (error && typeof error === 'object' && 'errors' in error && Array.isArray((error as any).errors)) {
+         const validationError = (error as any).errors[0];
+         const message = validationError?.message || 'Error procesando estadísticas del dominio.';
+         return res.status(400).json({ error: message });
+      }
+      const errorMessage = error instanceof Error
+         ? error.message || 'Error procesando estadísticas del dominio.'
+         : 'Error procesando estadísticas del dominio.';
+      return res.status(400).json({ error: errorMessage });
    }
 }

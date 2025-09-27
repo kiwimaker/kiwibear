@@ -106,6 +106,10 @@ export function useFetchGlobalStats() {
 
 type DomainScrapeLogResponse = {
    logs: DomainScrapeLogType[],
+   stats?: {
+      totalCount: number,
+      totalSizeBytes: number,
+   },
 };
 
 export async function fetchDomainScrapeLogs(domain?: string, limit = 50): Promise<DomainScrapeLogResponse> {
@@ -126,6 +130,32 @@ export async function fetchDomainScrapeLogs(domain?: string, limit = 50): Promis
 
 export function useFetchDomainScrapeLogs(domain?: string, limit = 50) {
    return useQuery(['domain-scrape-logs', domain, limit], () => fetchDomainScrapeLogs(domain, limit), { keepPreviousData: true });
+}
+
+export function useClearDomainScrapeLogs(domain?: string) {
+   const queryClient = useQueryClient();
+   return useMutation(async () => {
+      const searchParams = new URLSearchParams();
+      if (domain) {
+         searchParams.append('domain', domain);
+      }
+      const query = searchParams.toString();
+      const res = await fetch(`${window.location.origin}/api/logs/domain-scrape${query ? `?${query}` : ''}`, { method: 'DELETE' });
+      const response = await res.json();
+      if (!res.ok) {
+         throw new Error(response?.error || 'Error clearing domain scrape logs');
+      }
+      return response;
+   }, {
+      onSuccess: () => {
+         toast('Actividad eliminada correctamente.', { icon: '✔️' });
+         queryClient.invalidateQueries('domain-scrape-logs');
+      },
+      onError: (error) => {
+         console.log('[ERROR] Clearing domain scrape logs', error);
+         toast('No se pudo eliminar la actividad reciente.', { icon: '⚠️' });
+      },
+   });
 }
 
 export function useAddDomain(onSuccess:Function) {

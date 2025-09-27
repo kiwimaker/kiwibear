@@ -8,7 +8,7 @@ import DomainSettings from '../../components/domains/DomainSettings';
 import Settings from '../../components/settings/Settings';
 import Footer from '../../components/common/Footer';
 import Icon from '../../components/common/Icon';
-import { useFetchDomains, useFetchGlobalStats, useFetchDomainScrapeLogs } from '../../services/domains';
+import { useFetchDomains, useFetchGlobalStats, useFetchDomainScrapeLogs, useClearDomainScrapeLogs } from '../../services/domains';
 import { useFetchSettings } from '../../services/settings';
 
 const StatsPage = () => {
@@ -20,10 +20,34 @@ const StatsPage = () => {
    const { data: domainsData } = useFetchDomains(router, false);
    const { data: statsData, isLoading: statsLoading } = useFetchGlobalStats();
    const { data: logsData, isLoading: logsLoading } = useFetchDomainScrapeLogs(undefined, 100);
+   const { mutate: clearLogs, isLoading: isClearingLogs } = useClearDomainScrapeLogs();
 
    const domains = domainsData?.domains || [];
    const stats = statsData || { domains: [], totals: { totalScrapes: 0, last30Days: 0 } };
    const logs = logsData?.logs || [];
+   const totalLogCount = logsData?.stats?.totalCount || 0;
+   const totalLogSize = logsData?.stats?.totalSizeBytes || 0;
+
+   const humanReadableSize = React.useMemo(() => {
+      if (!Number.isFinite(totalLogSize) || totalLogSize <= 0) { return '0 B'; }
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const power = Math.min(Math.floor(Math.log(totalLogSize) / Math.log(1024)), units.length - 1);
+      const size = totalLogSize / (1024 ** power);
+      return `${size.toFixed(power === 0 ? 0 : 1)} ${units[power]}`;
+   }, [totalLogSize]);
+
+   const logSummary = React.useMemo(() => {
+      if (totalLogCount === 0) { return 'Sin registros'; }
+      const countLabel = `${totalLogCount} registro${totalLogCount === 1 ? '' : 's'}`;
+      return `${countLabel} · ${humanReadableSize}`;
+   }, [humanReadableSize, totalLogCount]);
+
+   const handleClearLogs = React.useCallback(() => {
+      if (isClearingLogs || totalLogCount === 0) { return; }
+      const confirmClear = window.confirm('¿Seguro que quieres eliminar toda la actividad reciente?');
+      if (!confirmClear) { return; }
+      clearLogs();
+   }, [clearLogs, isClearingLogs, totalLogCount]);
 
    return (
       <div className="Domain ">
@@ -91,9 +115,21 @@ const StatsPage = () => {
                      </div>
 
                      <div className='border border-slate-200 rounded-lg bg-white'>
-                        <div className='px-4 py-3 border-b border-slate-100 flex items-center gap-2 text-sm font-semibold text-slate-600'>
-                           <Icon type='clock' size={16} />
-                           Actividad reciente de scrapes
+                        <div className='px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 text-sm font-semibold text-slate-600'>
+                           <span className='flex items-center gap-2'>
+                              <Icon type='clock' size={16} />
+                              Actividad reciente de scrapes
+                           </span>
+                           <div className='flex items-center gap-4 text-xs font-normal text-slate-500'>
+                              <span>{logSummary}</span>
+                              <button
+                              type='button'
+                              className='text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50 disabled:cursor-not-allowed'
+                              onClick={handleClearLogs}
+                              disabled={isClearingLogs || totalLogCount === 0}>
+                                 {isClearingLogs ? 'Eliminando…' : 'Borrar actividad'}
+                              </button>
+                           </div>
                         </div>
                         {logsLoading ? (
                            <p className='px-4 py-3 text-sm text-slate-500'>Cargando actividad…</p>

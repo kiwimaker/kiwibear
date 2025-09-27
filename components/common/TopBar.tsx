@@ -32,7 +32,7 @@ const TopBar = ({ showSettings, showAddModal }:TopbarProps) => {
    const justifyClass = isDomainsPage ? 'lg:justify-between' : 'lg:justify-end';
 
    return (
-       <div className={`topbar flex w-full mx-auto justify-between ${justifyClass} bg-white lg:bg-transparent`}>
+       <div className={`topbar flex w-full lg:w-4/5 mx-auto justify-between ${justifyClass} bg-white lg:bg-transparent`}>
 
          <h3 className={`p-4 text-base font-bold text-blue-700 ${isDomainsPage ? 'lg:pl-0' : 'lg:hidden'}`}>
             <span className=' relative top-[3px] mr-1'><Icon type="logo" size={24} color="#364AFF" /></span> Kiwibear

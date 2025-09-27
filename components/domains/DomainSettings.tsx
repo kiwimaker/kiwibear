@@ -257,7 +257,7 @@ const DomainSettings = ({ domain, closeModal }: DomainSettingsProps) => {
                         <div>
                            <p className='mb-1 font-semibold text-sm text-gray-700'>Gestión automática del Top 20</p>
                            <p className='text-xs text-gray-500 max-w-xs'>
-                              Desactiva el seguimiento extendido cuando una keyword está en posición 6 o mejor y lo activa si cae fuera del top 10.
+                              Desactiva el seguimiento extendido cuando una keyword está en posición 7 o mejor y lo activa si cae fuera del top 10.
                            </p>
                         </div>
                         <label className='flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none'>

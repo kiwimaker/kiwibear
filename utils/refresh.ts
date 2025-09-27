@@ -158,7 +158,7 @@ export const updateKeywordPosition = async (keywordRaw:Keyword, udpatedkeyword: 
 
          if (autoManageTop20) {
             const settingsSnapshot: KeywordCustomSettings = { ...(keyword.settings || {}) };
-            const shouldDisableTop20 = newPos > 0 && newPos <= 6 && settingsSnapshot.fetchTop20 === true;
+            const shouldDisableTop20 = newPos > 0 && newPos <= 7 && settingsSnapshot.fetchTop20 === true;
             const shouldEnableTop20 = (newPos === 0 || newPos > 10) && settingsSnapshot.fetchTop20 !== true;
 
             if (shouldDisableTop20) {

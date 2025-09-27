@@ -1,12 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import db from '../../../database/database';
 import DomainScrapeStat from '../../../database/models/domainScrapeStat';
+import DomainScrapeLog from '../../../database/models/domainScrapeLog';
 import verifyUser from '../../../utils/verifyUser';
 
 type DomainStatsResponse = {
    stats?: DomainStatsType,
    reset?: {
       deleted: number,
+   },
+   rebuild?: {
+      inserted: number,
+      totalRequests: number,
    },
    error?: string|null,
 };
@@ -67,6 +72,50 @@ const resetDomainStats = async (domain: string): Promise<number> => {
    return deleted;
 };
 
+const rebuildDomainStatsFromLogs = async (domain: string): Promise<{ inserted: number, totalRequests: number }> => {
+   const normalized = normalizeDomain(domain);
+   if (!normalized) {
+      throw new Error('Domain is required to rebuild stats');
+   }
+
+   const logs = await DomainScrapeLog.findAll({
+      where: { domain: normalized },
+      raw: true,
+      attributes: ['createdAt', 'requests'],
+   });
+
+   if (logs.length === 0) {
+      return { inserted: 0, totalRequests: 0 };
+   }
+
+   const counter = new Map<string, number>();
+   logs.forEach((log: any) => {
+      const timestamp = log.createdAt ? new Date(log.createdAt) : null;
+      if (!timestamp || Number.isNaN(timestamp.getTime())) {
+         return;
+      }
+      const dateKey = timestamp.toISOString().slice(0, 10);
+      const requests = typeof log.requests === 'number'
+         ? log.requests
+         : parseInt(`${log.requests}`, 10) || 0;
+      counter.set(dateKey, (counter.get(dateKey) || 0) + requests);
+   });
+
+   const payload = Array.from(counter.entries()).map(([date, count]) => ({
+      domain: normalized,
+      date,
+      count,
+   }));
+
+   await DomainScrapeStat.destroy({ where: { domain: normalized } });
+   if (payload.length > 0) {
+      await DomainScrapeStat.bulkCreate(payload);
+   }
+
+   const totalRequests = payload.reduce((acc, item) => acc + item.count, 0);
+   return { inserted: payload.length, totalRequests };
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<DomainStatsResponse>) {
    const authorized = verifyUser(req, res);
    if (authorized !== 'authorized') {
@@ -87,6 +136,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       if (req.method === 'DELETE') {
          const deleted = await resetDomainStats(req.query.domain);
          return res.status(200).json({ reset: { deleted } });
+      }
+
+      if (req.method === 'POST') {
+         const rebuild = await rebuildDomainStatsFromLogs(req.query.domain);
+         return res.status(200).json({ rebuild });
       }
 
       return res.status(405).json({ error: 'Method Not Allowed' });

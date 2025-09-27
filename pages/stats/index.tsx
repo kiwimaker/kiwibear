@@ -15,6 +15,7 @@ import {
    useFetchDomainScrapeLogs,
    useClearDomainScrapeLogs,
    useResetDomainScrapeStats,
+   useRebuildDomainScrapeStats,
 } from '../../services/domains';
 import { useFetchSettings } from '../../services/settings';
 
@@ -24,6 +25,7 @@ const StatsPage = () => {
    const [showDomainSettings, setShowDomainSettings] = React.useState<DomainType | false>(false);
    const [showSettings, setShowSettings] = React.useState(false);
    const [pendingResetDomain, setPendingResetDomain] = React.useState<string | null>(null);
+   const [pendingRebuildDomain, setPendingRebuildDomain] = React.useState<string | null>(null);
    const [showConfirmClearLogs, setShowConfirmClearLogs] = React.useState(false);
    const { data: appSettingsData, isLoading: isAppSettingsLoading } = useFetchSettings();
    const { data: domainsData } = useFetchDomains(router, false);
@@ -31,6 +33,7 @@ const StatsPage = () => {
    const { data: logsData, isLoading: logsLoading } = useFetchDomainScrapeLogs(undefined, 100);
    const { mutate: clearLogs, isLoading: isClearingLogs } = useClearDomainScrapeLogs();
    const { mutate: resetDomainStats, isLoading: isResettingDomainStats } = useResetDomainScrapeStats();
+   const { mutate: rebuildDomainStats, isLoading: isRebuildingDomainStats } = useRebuildDomainScrapeStats();
 
    const domains = domainsData?.domains || [];
    const stats = statsData || { domains: [], totals: { totalScrapes: 0, last30Days: 0 } };
@@ -41,6 +44,8 @@ const StatsPage = () => {
       ? 'border-amber-300 bg-amber-50'
       : 'border-emerald-200 bg-emerald-50'} border rounded-lg p-4`;
    const destructiveActionButtonClasses = 'text-xs font-semibold text-rose-600 hover:text-rose-700 '
+      + 'disabled:opacity-50 disabled:cursor-not-allowed';
+   const secondaryActionButtonClasses = 'text-xs font-semibold text-sky-600 hover:text-sky-700 '
       + 'disabled:opacity-50 disabled:cursor-not-allowed';
    const logs = logsData?.logs || [];
    const totalLogCount = logsData?.stats?.totalCount || 0;
@@ -94,6 +99,25 @@ const StatsPage = () => {
          },
       });
    }, [isResettingDomainStats, pendingResetDomain, resetDomainStats]);
+
+   const handleRequestDomainRebuild = React.useCallback((domain: string) => {
+      if (!domain || isRebuildingDomainStats) { return; }
+      setPendingRebuildDomain(domain);
+   }, [isRebuildingDomainStats]);
+
+   const cancelDomainRebuild = React.useCallback(() => {
+      if (isRebuildingDomainStats) { return; }
+      setPendingRebuildDomain(null);
+   }, [isRebuildingDomainStats]);
+
+   const confirmDomainRebuild = React.useCallback(() => {
+      if (!pendingRebuildDomain || isRebuildingDomainStats) { return; }
+      rebuildDomainStats(pendingRebuildDomain, {
+         onSuccess: () => {
+            setPendingRebuildDomain(null);
+         },
+      });
+   }, [isRebuildingDomainStats, pendingRebuildDomain, rebuildDomainStats]);
 
    return (
       <div className="Domain ">
@@ -161,35 +185,48 @@ const StatsPage = () => {
                            {hasMismatches && (
                               <div className='mt-4 overflow-x-auto'>
                                  <table className='min-w-full text-xs'>
-                                 <thead className='bg-white/60 text-left uppercase tracking-wide text-slate-500'>
-                                    <tr>
-                                       <th className='px-3 py-2'>Dominio</th>
-                                       <th className='px-3 py-2'>Total stats</th>
-                                       <th className='px-3 py-2'>Total logs</th>
+                                    <thead className='bg-white/60 text-left uppercase tracking-wide text-slate-500'>
+                                       <tr>
+                                          <th className='px-3 py-2'>Dominio</th>
+                                          <th className='px-3 py-2'>Total stats</th>
+                                          <th className='px-3 py-2'>Total logs</th>
                                           <th className='px-3 py-2'>Diferencia</th>
                                           <th className='px-3 py-2'>30 días stats</th>
                                           <th className='px-3 py-2'>30 días logs</th>
                                           <th className='px-3 py-2'>Último log</th>
                                           <th className='px-3 py-2'>Posible causa</th>
+                                          <th className='px-3 py-2'>Acciones</th>
                                        </tr>
                                     </thead>
                                     <tbody>
-                                       {mismatches.map((item) => (
-                                          <tr key={item.domain} className='border-t border-slate-200 bg-white/40 backdrop-blur'>
-                                             <td className='px-3 py-2 font-semibold text-slate-700'>{item.domain}</td>
-                                             <td className='px-3 py-2 text-slate-600'>{item.statsTotal}</td>
-                                             <td className='px-3 py-2 text-slate-600'>{item.logsTotal}</td>
-                                             <td className='px-3 py-2 text-slate-600'>
-                                                {item.totalDiff > 0 ? `+${item.totalDiff}` : item.totalDiff}
-                                             </td>
-                                             <td className='px-3 py-2 text-slate-600'>{item.statsLast30Days}</td>
-                                             <td className='px-3 py-2 text-slate-600'>{item.logsLast30Days}</td>
-                                             <td className='px-3 py-2 text-slate-600'>
-                                                {item.lastLogAt ? new Date(item.lastLogAt).toLocaleString() : '—'}
-                                             </td>
-                                             <td className='px-3 py-2 text-slate-600'>{item.possibleCause || 'Sin determinar'}</td>
-                                          </tr>
-                                       ))}
+                                       {mismatches.map((item) => {
+                                          const isDomainRebuilding = isRebuildingDomainStats && pendingRebuildDomain === item.domain;
+                                          return (
+                                             <tr key={item.domain} className='border-t border-slate-200 bg-white/40 backdrop-blur'>
+                                                <td className='px-3 py-2 font-semibold text-slate-700'>{item.domain}</td>
+                                                <td className='px-3 py-2 text-slate-600'>{item.statsTotal}</td>
+                                                <td className='px-3 py-2 text-slate-600'>{item.logsTotal}</td>
+                                                <td className='px-3 py-2 text-slate-600'>
+                                                   {item.totalDiff > 0 ? `+${item.totalDiff}` : item.totalDiff}
+                                                </td>
+                                                <td className='px-3 py-2 text-slate-600'>{item.statsLast30Days}</td>
+                                                <td className='px-3 py-2 text-slate-600'>{item.logsLast30Days}</td>
+                                                <td className='px-3 py-2 text-slate-600'>
+                                                   {item.lastLogAt ? new Date(item.lastLogAt).toLocaleString() : '—'}
+                                                </td>
+                                                <td className='px-3 py-2 text-slate-600'>{item.possibleCause || 'Sin determinar'}</td>
+                                                <td className='px-3 py-2'>
+                                                   <button
+                                                      type='button'
+                                                      className={secondaryActionButtonClasses}
+                                                      onClick={() => handleRequestDomainRebuild(item.domain)}
+                                                      disabled={isDomainRebuilding}>
+                                                      {isDomainRebuilding ? 'Recalculando…' : 'Recalcular'}
+                                                   </button>
+                                                </td>
+                                             </tr>
+                                          );
+                                       })}
                                     </tbody>
                                  </table>
                               </div>
@@ -334,6 +371,34 @@ const StatsPage = () => {
          </CSSTransition>
          <CSSTransition in={showSettings} timeout={300} classNames="settings_anim" unmountOnExit mountOnEnter>
              <Settings closeSettings={() => setShowSettings(false)} />
+         </CSSTransition>
+         <CSSTransition in={!!pendingRebuildDomain} timeout={300} classNames="modal_anim" unmountOnExit mountOnEnter>
+            <Modal closeModal={cancelDomainRebuild} title='Recalcular estadísticas desde la actividad'>
+               <p className='text-sm text-slate-600'>
+                  Se reconstruirán las estadísticas de
+                  {' '}
+                  <span className='font-semibold text-slate-800'>{pendingRebuildDomain}</span>
+                  {' '}utilizando los registros existentes de actividad.
+               </p>
+               <p className='mt-3 text-xs text-slate-500'>Los logs no se modifican, pero las estadísticas actuales serán reemplazadas.</p>
+               <div className='mt-4 flex justify-end gap-3'>
+                  <button
+                  type='button'
+                  className='px-3 py-2 text-sm font-medium text-slate-600 hover:text-slate-800'
+                  onClick={cancelDomainRebuild}
+                  disabled={isRebuildingDomainStats}>
+                     Cancelar
+                  </button>
+                  <button
+                  type='button'
+                  className={'px-3 py-2 text-sm font-semibold text-white bg-sky-600 rounded-md hover:bg-sky-700 '
+                  + 'disabled:opacity-60 disabled:cursor-not-allowed'}
+                  onClick={confirmDomainRebuild}
+                  disabled={isRebuildingDomainStats}>
+                     {isRebuildingDomainStats ? 'Recalculando…' : 'Sí, recalcular'}
+                  </button>
+               </div>
+            </Modal>
          </CSSTransition>
          <CSSTransition in={!!pendingResetDomain} timeout={300} classNames="modal_anim" unmountOnExit mountOnEnter>
             <Modal closeModal={cancelDomainReset} title='Reiniciar estadísticas del dominio'>

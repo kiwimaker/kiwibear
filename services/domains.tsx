@@ -209,6 +209,32 @@ export function useResetDomainScrapeStats() {
    });
 }
 
+export function useRebuildDomainScrapeStats() {
+   const queryClient = useQueryClient();
+   return useMutation(async (domain: string) => {
+      if (!domain) {
+         throw new Error('Domain is required to rebuild stats');
+      }
+      const searchParams = new URLSearchParams({ domain });
+      const res = await fetch(`${window.location.origin}/api/domain/stats?${searchParams.toString()}`, { method: 'POST' });
+      const response = await res.json();
+      if (!res.ok) {
+         throw new Error(response?.error || 'Error rebuilding domain stats');
+      }
+      return response;
+   }, {
+      onSuccess: () => {
+         toast('Estadísticas recalculadas desde la actividad.', { icon: '✔️' });
+         queryClient.invalidateQueries('global-stats');
+         queryClient.invalidateQueries('domain-stats');
+      },
+      onError: (error) => {
+         console.log('[ERROR] Rebuilding domain stats', error);
+         toast('No se pudieron recalcular las estadísticas.', { icon: '⚠️' });
+      },
+   });
+}
+
 export function useAddDomain(onSuccess:Function) {
    const router = useRouter();
    const queryClient = useQueryClient();

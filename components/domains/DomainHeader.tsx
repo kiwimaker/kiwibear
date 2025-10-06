@@ -26,7 +26,7 @@ const DomainHeader = (
    const isConsole = router.pathname === '/domain/console/[slug]';
    const isInsight = router.pathname === '/domain/insight/[slug]';
    const isIdeas = router.pathname === '/domain/ideas/[slug]';
-   const isCompetitors = router.pathname === '/domain/competitors/[slug]';
+   const isCompetitors = router.pathname.startsWith('/domain/competitors/[slug]');
 
    const daysName = (dayKey:string) => dayKey.replace('three', '3').replace('seven', '7').replace('thirty', '30').replace('Days', ' Days');
    const buttonStyle = 'leading-6 inline-block px-2 py-2 text-gray-500 hover:text-gray-700';
@@ -89,7 +89,12 @@ const DomainHeader = (
                   </a>
                </Link>
             </li>
-            <li className={`${tabStyle} ${router.pathname === '/domain/competitors/[slug]' ? 'bg-white border border-b-0 font-semibold' : ''}`}>
+            <li
+            className={`${tabStyle} ${
+               router.pathname.startsWith('/domain/competitors/[slug]')
+                  ? 'bg-white border border-b-0 font-semibold'
+                  : ''
+            }`}>
                <Link href={`/domain/competitors/${domain.slug}`} passHref={true}>
                   <a className='px-4 py-2 inline-block'><Icon type="target" size={13} classes='hidden lg:inline-block' />
                      <span className='text-xs lg:text-sm lg:ml-2'>Competitors</span>

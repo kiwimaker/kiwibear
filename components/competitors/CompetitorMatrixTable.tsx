@@ -34,6 +34,30 @@ const CompetitorMatrixTable = ({ keywords, domainName, competitors, onOpenDetail
       return a.keyword.localeCompare(b.keyword);
    }), [keywords]);
 
+   const bestPositionCounts = useMemo(() => {
+      const counts = competitors.reduce<Record<string, number>>((acc, name) => ({ ...acc, [name]: 0 }), {});
+      let domainCount = 0;
+      orderedKeywords.forEach((keyword) => {
+         const competitorPositions = competitors.map((competitor) => keyword.competitors?.[competitor]?.position || 0);
+         const allPositions = [
+            keyword.position && keyword.position > 0 ? keyword.position : null,
+            ...competitorPositions.map((position) => (position && position > 0 ? position : null)),
+         ].filter((value): value is number => value !== null);
+         if (allPositions.length === 0) { return; }
+         const bestPosition = Math.min(...allPositions);
+         if (keyword.position && keyword.position === bestPosition) {
+            domainCount += 1;
+         }
+         competitors.forEach((competitor, index) => {
+            const position = competitorPositions[index];
+            if (position && position === bestPosition) {
+               counts[competitor] = (counts[competitor] || 0) + 1;
+            }
+         });
+      });
+      return { domainCount, counts };
+   }, [orderedKeywords, competitors]);
+
    if (orderedKeywords.length === 0) {
       return (
          <p className='mt-6 text-sm text-gray-500'>Todavía no hay posiciones registradas. Vuelve a actualizar tus keywords para obtener datos.</p>
@@ -47,12 +71,37 @@ const CompetitorMatrixTable = ({ keywords, domainName, competitors, onOpenDetail
                <thead className='bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500'>
                   <tr>
                      <th className='px-4 py-3 text-left font-semibold'>Keyword</th>
-                     <th className='px-4 py-3 text-left font-semibold'>{domainName || 'Dominio'}</th>
-                     {competitors.map((competitor) => (
-                        <th key={competitor} className='px-4 py-3 text-left font-semibold'>
-                           {formatCompetitorLabel(competitor)}
-                        </th>
-                     ))}
+                     <th className='px-4 py-3 text-left font-semibold'>
+                        <span className='inline-flex items-center gap-2'>
+                           {domainName || 'Dominio'}
+                           {bestPositionCounts.domainCount > 0 && (
+                              <span
+                                 className='inline-flex items-center justify-center h-5 min-w-[20px] px-2 rounded-full
+                                 bg-green-100 text-green-700 text-xs font-semibold'
+                              >
+                                 {bestPositionCounts.domainCount}
+                              </span>
+                           )}
+                        </span>
+                     </th>
+                     {competitors.map((competitor) => {
+                        const bestCount = bestPositionCounts.counts[competitor] || 0;
+                        return (
+                           <th key={competitor} className='px-4 py-3 text-left font-semibold'>
+                              <span className='inline-flex items-center gap-2'>
+                                 {formatCompetitorLabel(competitor)}
+                                 {bestCount > 0 && (
+                                    <span
+                                       className='inline-flex items-center justify-center h-5 min-w-[20px] px-2 rounded-full
+                                       bg-green-100 text-green-700 text-xs font-semibold'
+                                    >
+                                       {bestCount}
+                                    </span>
+                                 )}
+                              </span>
+                           </th>
+                        );
+                     })}
                      <th className='px-4 py-3 text-left font-semibold whitespace-nowrap'>Actualizado</th>
                   </tr>
                </thead>
@@ -62,8 +111,12 @@ const CompetitorMatrixTable = ({ keywords, domainName, competitors, onOpenDetail
                         name: competitor,
                         position: keyword.competitors?.[competitor]?.position,
                      }));
-                     const domainBeatsCompetitors = !!(keyword.position && keyword.position > 0
-                        && competitorEntries.every(({ position }) => !position || position <= 0 || keyword.position < position));
+                     const allPositions = [
+                        keyword.position && keyword.position > 0 ? keyword.position : null,
+                        ...competitorEntries.map(({ position }) => (position && position > 0 ? position : null)),
+                     ].filter((value): value is number => value !== null);
+                     const bestPosition = allPositions.length > 0 ? Math.min(...allPositions) : null;
+                     const domainIsBest = !!(bestPosition && keyword.position && keyword.position === bestPosition);
                      return (
                         <tr
                            key={keyword.ID}
@@ -81,12 +134,15 @@ const CompetitorMatrixTable = ({ keywords, domainName, competitors, onOpenDetail
                                  </span>
                               </div>
                            </td>
-                           <td className='px-4 py-3 align-top'>{renderPosition(keyword.position, domainBeatsCompetitors)}</td>
-                           {competitorEntries.map(({ name, position }) => (
-                              <td key={`${keyword.ID}-${name}`} className='px-4 py-3 align-top'>
-                                 {renderPosition(position)}
-                              </td>
-                           ))}
+                           <td className='px-4 py-3 align-top'>{renderPosition(keyword.position, domainIsBest)}</td>
+                           {competitorEntries.map(({ name, position }) => {
+                              const competitorIsBest = !!(bestPosition && position && position === bestPosition);
+                              return (
+                                 <td key={`${keyword.ID}-${name}`} className='px-4 py-3 align-top'>
+                                    {renderPosition(position, competitorIsBest)}
+                                 </td>
+                              );
+                           })}
                            <td className='px-4 py-3 align-top text-xs text-slate-400'>
                               <span className='inline-flex items-center gap-1'>
                                  <Icon type='date' size={12} />

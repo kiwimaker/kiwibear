@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import Icon from '../common/Icon';
 
@@ -14,8 +14,11 @@ const formatUrl = (url?: string) => {
 };
 
 const CompetitorKeywordsTable = ({ keywords, competitor, onOpenDetails }: CompetitorKeywordsTableProps) => {
+   const [sortField, setSortField] = useState<'original' | 'url'>('original');
+   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
    const rows = useMemo(() => {
-      return keywords.map((keyword, index) => {
+      const mapped = keywords.map((keyword, index) => {
          const competitorData = keyword.competitors && keyword.competitors[competitor]
             ? keyword.competitors[competitor]
             : { position: 0 };
@@ -26,15 +29,48 @@ const CompetitorKeywordsTable = ({ keywords, competitor, onOpenDetails }: Compet
             .map(({ entry }) => entry?.competitors?.[competitor])
             .filter((item) => item && item.position && item.position > 0)
             .sort((a, b) => (a!.position - b!.position))[0];
+         const competitorUrl = competitorData.url || '';
+         const formattedUrl = competitorUrl ? formatUrl(competitorUrl) : '';
          return {
             keyword,
             competitorPosition: competitorData.position || 0,
-            competitorUrl: competitorData.url || '',
+            competitorUrl,
+            formattedUrl,
+            sortUrl: formattedUrl.toLowerCase(),
             competitorBest: bestEntry ? bestEntry.position : 0,
             originalIndex: index,
          };
-      }).sort((a, b) => a.originalIndex - b.originalIndex);
-   }, [keywords, competitor]);
+      });
+      const sorted = [...mapped];
+      if (sortField === 'url') {
+         sorted.sort((a, b) => {
+            if (!a.sortUrl && !b.sortUrl) { return 0; }
+            if (!a.sortUrl) { return 1; }
+            if (!b.sortUrl) { return -1; }
+            return a.sortUrl.localeCompare(b.sortUrl);
+         });
+         if (sortDirection === 'desc') {
+            sorted.reverse();
+         }
+      } else {
+         sorted.sort((a, b) => a.originalIndex - b.originalIndex);
+      }
+      return sorted;
+   }, [keywords, competitor, sortField, sortDirection]);
+
+   const handleToggleUrlSort = () => {
+      if (sortField === 'url') {
+         if (sortDirection === 'asc') {
+            setSortDirection('desc');
+         } else {
+            setSortField('original');
+            setSortDirection('asc');
+         }
+      } else {
+         setSortField('url');
+         setSortDirection('asc');
+      }
+   };
 
    if (rows.length === 0) {
       return (
@@ -54,11 +90,20 @@ const CompetitorKeywordsTable = ({ keywords, competitor, onOpenDetails }: Compet
             <span>Keyword</span>
             <span>Posición</span>
             <span>Mejor</span>
-            <span>URL</span>
+            <button
+               type='button'
+               className='flex items-center gap-1 uppercase tracking-wide'
+               onClick={handleToggleUrlSort}
+            >
+               URL
+               {sortField === 'url' && (
+                  <Icon type={sortDirection === 'asc' ? 'caret-up' : 'caret-down'} size={12} />
+               )}
+            </button>
             <span>Actualizado</span>
          </div>
          <div>
-            {rows.map(({ keyword, competitorPosition, competitorUrl, competitorBest }) => (
+            {rows.map(({ keyword, competitorPosition, competitorUrl, formattedUrl, competitorBest }) => (
                <button
                   key={`${keyword.ID}-${competitor}`}
                   className={[
@@ -94,7 +139,7 @@ const CompetitorKeywordsTable = ({ keywords, competitor, onOpenDetails }: Compet
                      {competitorBest && competitorBest > 0 ? `#${competitorBest}` : '—'}
                   </span>
                   <span className='text-xs text-slate-500 truncate lg:block'>
-                     {competitorUrl ? formatUrl(competitorUrl) : '—'}
+                     {formattedUrl || '—'}
                   </span>
                   <span className='text-xs text-slate-400 flex items-center gap-1'>
                      <Icon type='date' size={12} />

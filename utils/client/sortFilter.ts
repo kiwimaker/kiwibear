@@ -51,6 +51,20 @@ export const sortKeywords = (theKeywords:KeywordType[], sortBy:string, scDataTyp
       case 'vol_desc':
             sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => (a.volume - b.volume));
             break;
+      case 'url_asc':
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => {
+               const urlA = (a.url || '').toLowerCase();
+               const urlB = (b.url || '').toLowerCase();
+               return urlB > urlA ? 1 : -1;
+            });
+            break;
+      case 'url_desc':
+            sortedItems = keywordsClone.sort((a: KeywordType, b: KeywordType) => {
+               const urlA = (a.url || '').toLowerCase();
+               const urlB = (b.url || '').toLowerCase();
+               return urlA > urlB ? 1 : -1;
+            });
+            break;
       case 'imp_desc':
             if (scDataType) {
                   sortedItems = theKeywords.sort((a: KeywordType, b: KeywordType) => {

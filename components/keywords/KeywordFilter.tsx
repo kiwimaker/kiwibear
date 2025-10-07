@@ -99,6 +99,8 @@ const KeywordFilters = (props: KeywordFilterProps) => {
       { value: 'alpha_desc', label: 'Alphabetically(Z-A)' },
       { value: 'vol_asc', label: 'Lowest Search Volume' },
       { value: 'vol_desc', label: 'Highest Search Volume' },
+      { value: 'url_asc', label: 'URL (A-Z)' },
+      { value: 'url_desc', label: 'URL (Z-A)' },
    );
 
    const columnOptionChoices: {label: string, value: string, locked: boolean}[] = [

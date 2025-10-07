@@ -8,52 +8,67 @@
 
 KiwiBear is an enhanced fork of SerpBear - an Open Source Search Engine Position Tracking and Keyword Research App. It allows you to track your website's keyword positions in Google and get notified of their position changes.
 
-## New Features in KiwiBear
+## 🚀 New Features in KiwiBear
 
-### 🆕 Recent Implementations
-- **Collapsible Sidebar**: Enhanced navigation with a collapsible sidebar for better screen space management
-- **Competitors Tracking**: Advanced competitor analysis with dedicated sidebar and tracking capabilities
-- **Enhanced Stats Page**: Comprehensive statistics page with improved visualizations
-- **Improved UI/UX**: Various interface improvements for better user experience
+KiwiBear extends SerpBear with powerful new capabilities for advanced SEO analysis:
 
-![Easy to Use Search Engine Rank Tracker](https://serpbear.b-cdn.net/serpbear_readme_v2.gif)
+### 🎯 Advanced Competitor Tracking
+- **Competitor Management**: Add and track unlimited competitors per domain through the domain settings interface
+- **Competitor Position Tracking**: View competitor positions alongside your own keywords in a dedicated, collapsible section
+- **URL Tracking**: See which specific URLs your competitors are ranking with for each keyword
+- **Competitor History**: Historical tracking of competitor positions stored in keyword history
 
-## Core Features (from SerpBear)
+### 🔍 Cannibalization Detection
+- **Multi-URL Detection**: Automatically identifies when multiple pages from your domain rank for the same keyword
+- **Visual Alerts**: Clear visual indicators in the keyword details view when cannibalization is detected
+- **Detailed Analysis**: Shows all ranking URLs from your domain with their respective positions
 
-- **Unlimited Keywords:** Add unlimited domains and unlimited keywords to track their SERP.
-- **Email Notification:** Get notified of your keyword position changes daily/weekly/monthly through email.
-- **SERP API:** SerpBear comes with built-in API that you can use for your marketing & data reporting tools.
-- **Keyword Research:** Ability to research keywords and auto-generate keyword ideas from your tracked website's content by integrating your Google Ads test account.
-- **Google Search Console Integration:** Get the actual visit count, impressions & more for Each keyword.
-- **Mobile App:** Add the PWA app to your mobile for a better mobile experience.
-- **Zero Cost to RUN:** Run the App on mogenius.com or Fly.io for free.
+### 📊 Enhanced SERP Tracking
+- **Fixed Google num Parameter**: Corrected implementation of Google's search parameter specifically for **Serper.dev** scraper
+- **Smart Auto Top 20 Management**: Intelligent automatic fetching of top 20 results based on current position:
+  - If keyword ranks at position 8 or higher: Automatically performs 2 searches to capture top 20 results
+  - If keyword ranks below position 8: Performs only 1 search to optimize API usage and costs
+  - Can be enabled per domain or per individual keyword
+- **Configurable SERP Pages**: Flexible configuration to fetch multiple pages of results per keyword
 
-## How it Works
+### 🗂️ URL History Tracking
+- **Historical URL Records**: Every position change now includes the ranking URL, not just the position
+- **Chart Tooltips**: Hover over any point in the position history chart to see which URL was ranking at that time
+- **URL Change Detection**: Track when different URLs from your domain start ranking for the same keyword
 
-The App uses third party website scrapers like ScrapingAnt, ScrapingRobot, SearchApi, SerpApi, HasData, FetchSerp or Your given Proxy ips to scrape google search results to see if your domain appears in the search result for the given keyword.
+### 🎯 Custom Keyword Ordering
+- **Drag & Drop Ordering**: Intuitive drag-and-drop interface to manually reorder keywords
+- **Persistent Custom Order**: Save and maintain your custom keyword order across sessions
+- **Device-Specific Ordering**: Separate custom ordering for desktop and mobile keywords
+- **Visual Feedback**: Clear highlighting of active device and current position during reordering
 
-The Keyword Research and keyword generation feature works by integrating your Google Ads test accounts into SerpBear. You can also view the added keyword's monthly search volume data once you [integrate Google Ads](https://docs.serpbear.com/miscellaneous/integrate-google-ads).
+### 🎨 UI/UX Improvements
+- **Desktop-Optimized Layout**: Wider main container for better data visualization on desktop screens
+- **Collapsible Sidebar**: Enhanced navigation with space-saving collapsible sidebar
+- **Enhanced Stats Page**: Comprehensive statistics with improved visualizations
+- **Better Data Display**: Improved tables and data presentation throughout the application
+- **Advanced Sorting Options**: Multiple sort criteria including:
+  - Position (top/lowest)
+  - Date added (recent/oldest)
+  - Alphabetical (A-Z/Z-A)
+  - Search volume (highest/lowest)
+  - **URL (A-Z/Z-A)** - Sort by ranking URL
+  - Impressions (most/least viewed) - when Search Console is integrated
+  - Visits (most/least visited) - when Search Console is integrated
 
-When you [integrate Google Search Console](https://docs.serpbear.com/miscellaneous/integrate-google-search-console), the app shows actual search visits for each tracked keywords. You can also discover new keywords, and find the most performing keywords, countries, pages.you will be able to view the actual visits count from Google Search for the tracked keywords.
+> **Note:** KiwiBear has been optimized primarily for desktop use with a wider main container to better display the enhanced data tables and additional columns.
 
-## Getting Started
+## ⚠️ Development Notice
 
-- **Step 1:** Deploy & Run the App.
-- **Step 2:** Access your App and Login.
-- **Step 3:** Add your First domain.
-- **Step 4:** Select a paid provider. Skip if you want to use Proxy ips.
-- **Step 5:** Setup the Scraping API/Proxy from the App's Settings interface.
-- **Step 6:** Add your keywords and start tracking.
+This project was developed through **live coding sessions** as an experimental enhancement of SerpBear. While we've implemented many powerful features, some aspects may not be perfectly polished.
 
+**We recommend:**
+- Using KiwiBear in **testing environments** first
+- Ideal for **personal use** and small-scale projects
+- Testing features thoroughly before production deployment
+- Reporting any issues you encounter
 
-## Tech Stack
-
-- **Framework**: Next.js 12.3.4 for Frontend & Backend
-- **Database**: SQLite with Sequelize ORM
-- **Styling**: Tailwind CSS
-- **State Management**: React Query
-- **Charts**: Chart.js
-- **Language**: TypeScript
+The project is functional and actively maintained, but may contain edge cases or minor bugs that are being addressed over time.
 
 ## Credits
 

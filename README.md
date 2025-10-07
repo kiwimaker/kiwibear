@@ -58,6 +58,16 @@ KiwiBear extends SerpBear with powerful new capabilities for advanced SEO analys
 
 > **Note:** KiwiBear has been optimized primarily for desktop use with a wider main container to better display the enhanced data tables and additional columns.
 
+## 🐳 Docker Deployment
+
+KiwiBear is available as a Docker image on Docker Hub:
+
+```bash
+docker pull kiwimaker/kiwibear:latest
+```
+
+**Platform Support:** Currently, only `linux/amd64` architecture is available on Docker Hub.
+
 ## ⚠️ Development Notice
 
 This project was developed through **live coding sessions** as an experimental enhancement of SerpBear. While we've implemented many powerful features, some aspects may not be perfectly polished.

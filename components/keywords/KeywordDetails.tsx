@@ -182,15 +182,17 @@ const KeywordDetails = ({ keyword, closeDetails }:KeywordDetailsProps) => {
                                  className={`leading-6 mb-4 mr-3 p-3 text-sm break-all pr-3 rounded 
                                  ${isPrimaryMatch ? ' bg-amber-50 border border-amber-200' : ''}
                                  ${isCannibalMatch ? ' border border-rose-200 bg-rose-50' : ''}`}
-                                 key={item.url + item.position}>
-                                    <h4 className='font-semibold text-blue-700'>
-                                       <a href={item.url} target="_blank" rel='noreferrer'>{`${index + 1}. ${item.title}`}</a>
-                                    </h4>
-                                    {/* <p>{item.description}</p> */}
-                                    <a className=' text-green-900' href={item.url} target="_blank" rel='noreferrer'>{item.url}</a>
-                                    {isCannibalMatch && (
-                                       <p className='text-xs text-rose-600 mt-1 font-semibold'>Coincidencia adicional del dominio</p>
-                                    )}
+                                    key={item.url + item.position}>
+                                       <h4 className='font-semibold text-blue-700'>
+                                          <a href={item.url} target="_blank" rel='noreferrer'>{`${index + 1}. ${item.title}`}</a>
+                                       </h4>
+                                       {item.snippet && (
+                                          <p className='mt-1 mb-1 text-xs text-gray-600'>{item.snippet}</p>
+                                       )}
+                                       <a className=' text-green-900' href={item.url} target="_blank" rel='noreferrer'>{item.url}</a>
+                                       {isCannibalMatch && (
+                                          <p className='text-xs text-rose-600 mt-1 font-semibold'>Coincidencia adicional del dominio</p>
+                                       )}
                                  </div>
                               );
                            })

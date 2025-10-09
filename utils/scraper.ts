@@ -9,6 +9,7 @@ type SearchResult = {
    title: string,
    url: string,
    position: number,
+   snippet?: string,
    matchesDomain?: boolean,
 }
 

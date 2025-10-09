@@ -15,10 +15,30 @@ type IdeaDetailsProps = {
 }
 
 const dummySearchResults = [
-   { position: 1, url: 'https://google.com/?search=dummy+text', title: 'Google Search Result One' },
-   { position: 1, url: 'https://yahoo.com/?search=dummy+text', title: 'Yahoo Results | Sample Dummy' },
-   { position: 1, url: 'https://gamespot.com/?search=dummy+text', title: 'GameSpot | Dummy Search Results' },
-   { position: 1, url: 'https://compressimage.com/?search=dummy+text', title: 'Compress Images Online' },
+   {
+      position: 1,
+      url: 'https://google.com/?search=dummy+text',
+      title: 'Google Search Result One',
+      snippet: 'Sample snippet placeholder for a fake result with no data.',
+   },
+   {
+      position: 2,
+      url: 'https://yahoo.com/?search=dummy+text',
+      title: 'Yahoo Results | Sample Dummy',
+      snippet: 'Another mock snippet used to simulate the description of a result.',
+   },
+   {
+      position: 3,
+      url: 'https://gamespot.com/?search=dummy+text',
+      title: 'GameSpot | Dummy Search Results',
+      snippet: 'GameSpot covers gaming news and reviews in this simulated hit.',
+   },
+   {
+      position: 4,
+      url: 'https://compressimage.com/?search=dummy+text',
+      title: 'Compress Images Online',
+      snippet: 'Online tool to compress images without noticeable quality loss.',
+   },
 ];
 
 const IdeaDetails = ({ keyword, closeDetails }:IdeaDetailsProps) => {
@@ -116,11 +136,13 @@ const IdeaDetails = ({ keyword, closeDetails }:IdeaDetailsProps) => {
                                     ref={domainExist ? searchResultFound : null}
                                     className={`leading-6 mb-4 mr-3 p-3 text-sm break-all pr-3 rounded 
                                     ${domainExist ? ' bg-amber-50 border border-amber-200' : ''}`}
-                                    key={item.url + item.position}>
+                                       key={item.url + item.position}>
                                        <h4 className='font-semibold text-blue-700'>
                                           <a href={item.url} target="_blank" rel='noreferrer'>{`${index + 1}. ${item.title}`}</a>
                                        </h4>
-                                       {/* <p>{item.description}</p> */}
+                                       {item.snippet && (
+                                          <p className='mt-1 mb-1 text-xs text-gray-600'>{item.snippet}</p>
+                                       )}
                                        <a className=' text-green-900' href={item.url} target="_blank" rel='noreferrer'>{item.url}</a>
                                     </div>
                                  );

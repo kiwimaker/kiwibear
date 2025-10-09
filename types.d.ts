@@ -73,6 +73,7 @@ type KeywordLastResult = {
    position: number,
    url: string,
    title: string,
+   snippet?: string,
    matchesDomain?: boolean
 }
 
@@ -279,6 +280,7 @@ type scraperExtractedItem = {
    title: string,
    url: string,
    position: number,
+   snippet?: string,
 }
 interface ScraperSettings {
    /** A Unique ID for the Scraper. eg: myScraper */

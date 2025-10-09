@@ -2,6 +2,7 @@ interface SerperResult {
    title: string,
    link: string,
    position: number,
+   snippet?: string,
 }
 
 const parseKeywordSettings = (settings: unknown): KeywordCustomSettings | undefined => {
@@ -68,12 +69,13 @@ const serper:ScraperSettings = {
       const extractedResult = [];
       const results: SerperResult[] = (typeof content === 'string') ? JSON.parse(content) : content as SerperResult[];
 
-      for (const { link, title, position } of results) {
+      for (const { link, title, position, snippet } of results) {
          if (title && link) {
             extractedResult.push({
                title,
                url: link,
                position,
+               snippet,
             });
          }
       }

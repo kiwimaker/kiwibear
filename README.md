@@ -30,6 +30,7 @@ KiwiBear extends SerpBear with powerful new capabilities for advanced SEO analys
   - If keyword ranks below position 8: Performs only 1 search to optimize API usage and costs
   - Can be enabled per domain or per individual keyword
 - **Configurable SERP Pages**: Flexible configuration to fetch multiple pages of results per keyword
+- **SERP Snippet Capture**: Stores the organic snippets/meta descriptions returned by Serper.dev and surfaces them in keyword and idea detail views
 
 ### 🗂️ URL History Tracking
 - **Historical URL Records**: Every position change now includes the ranking URL, not just the position

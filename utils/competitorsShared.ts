@@ -25,4 +25,40 @@ export const parseCompetitorsList = (value?: string | string[] | null): string[]
    return normalized ? [normalized] : [];
 };
 
-export const formatCompetitorLabel = (value: string): string => value.replace(/^https?:\/\/(www\.)?/i, '');
+const KNOWN_SECOND_LEVEL_SUFFIXES = new Set([
+   'com',
+   'co',
+   'org',
+   'net',
+   'gov',
+   'edu',
+   'gob',
+   'mil',
+   'biz',
+   'info',
+]);
+
+export const formatCompetitorLabel = (value: string): string => {
+   if (!value) { return ''; }
+   const trimmed = value.trim();
+   if (!trimmed) { return ''; }
+
+   const withoutProtocol = trimmed.replace(/^https?:\/\//i, '');
+   const withoutWww = withoutProtocol.replace(/^www\./i, '');
+   const host = withoutWww.split(/[/?#]/)[0];
+   const partsOriginal = host.split('.').filter(Boolean);
+   if (partsOriginal.length === 0) {
+      return withoutWww || trimmed;
+   }
+   if (partsOriginal.length === 1) {
+      return partsOriginal[0];
+   }
+
+   const partsLower = partsOriginal.map((part) => part.toLowerCase());
+   let endIndex = partsOriginal.length - 2;
+   while (endIndex > 0 && KNOWN_SECOND_LEVEL_SUFFIXES.has(partsLower[endIndex])) {
+      endIndex -= 1;
+   }
+
+   return partsOriginal[Math.max(endIndex, 0)];
+};

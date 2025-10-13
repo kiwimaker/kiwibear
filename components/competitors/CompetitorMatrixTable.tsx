@@ -64,6 +64,8 @@ const CompetitorMatrixTable = ({ keywords, domainName, competitors, onOpenDetail
       );
    }
 
+   const formattedDomainLabel = domainName ? formatCompetitorLabel(domainName) : 'Dominio';
+
    return (
       <div className='mt-6 border border-slate-200 rounded-lg bg-white overflow-hidden'>
          <div className='overflow-x-auto'>
@@ -72,8 +74,8 @@ const CompetitorMatrixTable = ({ keywords, domainName, competitors, onOpenDetail
                   <tr>
                      <th className='px-4 py-3 text-left font-semibold'>Keyword</th>
                      <th className='px-4 py-3 text-left font-semibold'>
-                        <span className='inline-flex items-center gap-2'>
-                           {domainName || 'Dominio'}
+                        <span className='inline-flex items-center gap-2 text-[11px] leading-tight'>
+                           <span className='whitespace-nowrap' title={domainName}>{formattedDomainLabel}</span>
                            {bestPositionCounts.domainCount > 0 && (
                               <span
                                  className='inline-flex items-center justify-center h-5 min-w-[20px] px-2 rounded-full
@@ -86,10 +88,11 @@ const CompetitorMatrixTable = ({ keywords, domainName, competitors, onOpenDetail
                      </th>
                      {competitors.map((competitor) => {
                         const bestCount = bestPositionCounts.counts[competitor] || 0;
+                        const formattedLabel = formatCompetitorLabel(competitor);
                         return (
                            <th key={competitor} className='px-4 py-3 text-left font-semibold'>
-                              <span className='inline-flex items-center gap-2'>
-                                 {formatCompetitorLabel(competitor)}
+                              <span className='inline-flex items-center gap-2 text-[11px] leading-tight'>
+                                 <span className='whitespace-nowrap' title={competitor}>{formattedLabel}</span>
                                  {bestCount > 0 && (
                                     <span
                                        className='inline-flex items-center justify-center h-5 min-w-[20px] px-2 rounded-full

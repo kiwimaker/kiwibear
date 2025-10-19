@@ -74,14 +74,16 @@ const TopBar = ({ showSettings, showAddModal }:TopbarProps) => {
                      </a>
                   </Link>
                </li>
+               <li className={`block lg:inline-block lg:ml-5 ${router.asPath === '/api-docs' ? ' text-blue-700' : ''}`}>
+                  <Link href={'/api-docs'} passHref={true}>
+                     <a className='block px-3 py-2 cursor-pointer'>
+                        <Icon type="link" color={router.asPath === '/api-docs' ? '#1d4ed8' : '#888'} size={14} /> API Docs
+                     </a>
+                  </Link>
+               </li>
                <li className='block lg:inline-block lg:ml-5'>
                   <a className='block px-3 py-2 cursor-pointer' onClick={() => showSettings()}>
                      <Icon type="settings-alt" color={'#888'} size={14} /> Settings
-                  </a>
-               </li>
-               <li className='block lg:inline-block lg:ml-5'>
-                  <a className='block px-3 py-2 cursor-pointer' href='https://docs.serpbear.com/' target="_blank" rel='noreferrer'>
-                     <Icon type="question" color={'#888'} size={14} /> Help
                   </a>
                </li>
                <li className='block lg:inline-block lg:ml-5'>

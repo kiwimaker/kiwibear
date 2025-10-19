@@ -1,0 +1,201 @@
+KiwiBear API Docs - Authentication, Domains & Keywords
+----------------------------------------------------
+
+Scope notice: this file only covers the “Autenticación y seguridad”, “Dominios” and “Keywords” sections of the API Docs page. It intentionally omits the rest of the content available in the UI.
+
+[Autenticación y seguridad]
+```
+Cabecera con API key (solo rutas whitelisted):
+Authorization: Bearer APIKEY
+
+Lista de rutas disponibles con API key:
+- GET /api/domains
+- GET /api/keyword?id={id}
+- GET /api/keywords?domain={domain}
+- POST /api/refresh?id={id|all}&domain={domain}
+- POST /api/cron
+- POST /api/notify?domain={domain?}
+- POST /api/searchconsole
+- GET /api/searchconsole?domain={domain}
+- GET /api/insight?domain={domain}
+Todas las demás requieren cookie de sesión `token`.
+```
+
+[Dominios]
+```
+GET /api/domains?withstats=true
+Request headers:
+  Authorization: Bearer APIKEY
+Response 200:
+{
+  "domains": [
+    {
+      "ID": 1,
+      "domain": "example.com",
+      "slug": "example-com",
+      "notification": true,
+      "notification_interval": "daily",
+      "notification_emails": "alerts@example.com",
+      "auto_manage_top20": false,
+      "lastUpdated": "2024-01-12T08:30:00.000Z",
+      "added": "2023-12-18T10:05:00.000Z",
+      "keywordCount": 32,
+      "avgPosition": 14,
+      "keywordsUpdated": "2024-01-12T08:00:00.000Z",
+      "scVisits": 120,
+      "scImpressions": 3200,
+      "scPosition": 18
+    }
+  ]
+}
+
+POST /api/domains  (solo sesión)
+Body:
+{ "domains": ["https://www.example.com/"] }
+Response 201:
+{ "domains": [{ "ID": 2, "domain": "example.com", "slug": "example-com", "added": "2024-01-12T09:15:00.000Z", "lastUpdated": "2024-01-12T09:15:00.000Z" }] }
+
+PUT /api/domains?domain=example.com  (solo sesión)
+Body:
+{
+  "notification_interval": "weekly",
+  "notification_emails": "alerts@example.com",
+  "search_console": { "property_type": "domain", "url": "sc-domain:example.com", "client_email": "ga-service@google.com", "private_key": "-----BEGIN PRIVATE KEY-----..." },
+  "competitors": ["otherdomain.com", "another.com"],
+  "auto_manage_top20": true
+}
+Response 200:
+{ "domain": { ...DomainType actualizado... } }
+
+DELETE /api/domains?domain=example.com  (solo sesión)
+Response 200:
+{ "domainRemoved": 1, "keywordsRemoved": 32, "SCDataRemoved": true }
+
+GET /api/domain?domain=example.com
+Response 200:
+{
+  "domain": {
+    "ID": 1,
+    "domain": "example.com",
+    "slug": "example-com",
+    "notification": true,
+    "notification_interval": "daily",
+    "notification_emails": "alerts@example.com",
+    "search_console": "{\"client_email\":\"user@serviceaccount\",\"private_key\":\"-----BEGIN PRIVATE KEY-----\"}"
+  }
+}
+
+/api/domain/stats?domain=example.com
+- GET → 200:
+  {
+    "stats": {
+      "total": 540,
+      "last30Days": 120,
+      "monthly": [
+        { "month": "2023-11", "count": 210 },
+        { "month": "2023-12", "count": 180 },
+        { "month": "2024-01", "count": 150 }
+      ]
+    }
+  }
+- DELETE → 200: { "reset": { "deleted": 45 } }
+- POST → 200: { "rebuild": { "inserted": 60, "totalRequests": 540 } }
+```
+
+[Keywords]
+```
+GET /api/keywords?domain=example.com
+Request headers:
+  Authorization: Bearer APIKEY
+Response 200:
+{
+  "keywords": [
+    {
+      "ID": 1001,
+      "keyword": "best kiwi fruit",
+      "device": "desktop",
+      "country": "US",
+      "domain": "example.com",
+      "position": 8,
+      "volume": 5400,
+      "history": {
+        "2024-01-06": { "position": 9 },
+        "2024-01-07": { "position": 8 }
+      },
+      "lastResult": [],
+      "tags": ["fruit", "ranking"],
+      "updating": false,
+      "lastUpdated": "2024-01-12T08:00:00.000Z",
+      "competitors": { "rival.com": { "position": 5 } }
+    }
+  ],
+  "competitors": ["rival.com", "other.com"],
+  "sortOrderSupported": true
+}
+
+GET /api/keyword?id=1001
+Response 200:
+{
+  "keyword": {
+    "ID": 1001,
+    "keyword": "best kiwi fruit",
+    "history": {
+      "2023-12-01": { "position": 12, "competitors": { "rival.com": { "position": 6 } } },
+      "2024-01-01": { "position": 9 }
+    },
+    "lastResult": [
+      { "position": 1, "url": "https://rival.com/guide", "title": "Guide to Kiwi", "matchesDomain": false }
+    ]
+  }
+}
+
+POST /api/keywords  (solo sesión)
+Body:
+{
+  "keywords": [
+    { "keyword": "buy kiwi online", "device": "desktop", "country": "US", "domain": "example.com", "tags": "shopping,kiwi" }
+  ]
+}
+Response 201:
+{ "keywords": [{ "ID": 1010, "keyword": "buy kiwi online", "domain": "example.com", "updating": true, ... }] }
+
+PUT /api/keywords?id=1001  (solo sesión)
+Body:
+{ "sticky": true, "settings": { "fetchTop20": true } }
+Response 200:
+{ "keywords": [{ "ID": 1001, "sticky": true, "settings": { "fetchTop20": true }, ... }] }
+
+DELETE /api/keywords?id=1001,1002  (solo sesión)
+Response 200:
+{ "keywordsRemoved": 2 }
+
+PUT /api/keywords-order  (solo sesión)
+Body:
+{ "sortOrder": { "1001": 1, "1002": 2 } }
+Response 200:
+{ "keywords": [{ "ID": 1001, "sortOrder": 1 }, { "ID": 1002, "sortOrder": 2 }] }
+
+POST /api/refresh?id=all&domain=example.com
+Response 200:
+{ "keywords": [{ "ID": 1001, "updating": true }, { "ID": 1002, "updating": true }] }
+
+GET /api/refresh?keyword=best+kiwi&country=US&device=desktop
+Response 200:
+{
+  "searchResult": {
+    "keyword": "best kiwi",
+    "country": "US",
+    "position": 3,
+    "results": [
+      { "title": "Kiwi Guide", "url": "https://example.com/guide", "position": 1, "matchesDomain": true },
+      { "title": "Rival Kiwi", "url": "https://rival.com/kiwi", "position": 2 }
+    ]
+  }
+}
+
+POST /api/volume  (solo sesión)
+Body:
+{ "domain": "example.com", "update": true }
+Response 200:
+{ "keywords": [1001, 1002] }
+```

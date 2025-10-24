@@ -94,7 +94,7 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
 
          // Detect cannibalization and get last URL
          let cannibalization = false;
-         let lastUrl: string | undefined = undefined;
+         let lastUrl: string | undefined;
          if (Array.isArray(keyword.lastResult)) {
             const domainResults = keyword.lastResult.filter((item) => item?.matchesDomain);
             if (domainResults.length > 0) {

@@ -133,26 +133,6 @@ const KeywordFilters = (props: KeywordFilterProps) => {
 
    return (
       <div className='domKeywords_filters py-4 px-6 flex justify-between text-sm text-gray-500 font-semibold border-b-[1px] lg:border-0'>
-         <div>
-            <ul className='flex text-xs'>
-               <li
-                data-testid="desktop_tab"
-               className={`${deviceTabStyle} ${device === 'desktop' ? ' bg-[#F8F9FF] text-gray-700' : ''}`}
-               onClick={() => setDevice('desktop')}>
-                     <Icon type='desktop' classes='top-[3px]' size={15} />
-                     <i className='hidden not-italic lg:inline-block ml-1'>Desktop</i>
-                     <span className={`${deviceTabCountStyle}`}>{keywordCounts.desktop}</span>
-               </li>
-               <li
-               data-testid="mobile_tab"
-               className={`${deviceTabStyle} ${device === 'mobile' ? ' bg-[#F8F9FF] text-gray-700' : ''}`}
-               onClick={() => setDevice('mobile')}>
-                     <Icon type='mobile' />
-                     <i className='hidden not-italic lg:inline-block ml-1'>Mobile</i>
-                     <span className={`${deviceTabCountStyle}`}>{keywordCounts.mobile}</span>
-               </li>
-            </ul>
-         </div>
          <div className='flex gap-5'>
             <div className=' lg:hidden'>
                <button

@@ -31,7 +31,7 @@ const AddKeywords = ({ closeModal, domain, keywords, scraperName = '', allowsCit
    const [showTagSuggestions, setShowTagSuggestions] = useState(false);
    const [newKeywordsData, setNewKeywordsData] = useState<KeywordsInput>({
       keywords: '',
-      device: 'desktop',
+      device: 'mobile',
       country: defCountry,
       domain,
       tags: '',

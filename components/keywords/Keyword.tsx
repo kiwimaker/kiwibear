@@ -136,7 +136,13 @@ const Keyword = (props: KeywordProps) => {
             title={keyword}
             >
                <span className={`fflag fflag-${country} w-[18px] h-[12px] mr-2`} title={countries[country][0]} />
-               <span className='inline-block text-ellipsis overflow-hidden whitespace-nowrap w-[calc(100%-50px)]'>
+               <Icon
+                  type={keywordData.device === 'mobile' ? 'mobile' : 'desktop'}
+                  size={14}
+                  classes='mr-2'
+                  title={keywordData.device === 'mobile' ? 'Mobile' : 'Desktop'}
+               />
+               <span className='inline-block text-ellipsis overflow-hidden whitespace-nowrap w-[calc(100%-80px)]'>
                   {keyword}{city ? ` (${city})` : ''}
                </span>
             </a>

@@ -31,7 +31,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    const titleColumnRef = useRef(null);
    const { keywords = [], isLoading = true, isConsoleIntegrated = false, settings, supportsCustomOrder = false } = props;
    const showSCData = isConsoleIntegrated;
-   const [device, setDevice] = useState<string>('desktop');
+   const [device, setDevice] = useState<string>('all');
    const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
    const [showKeyDetails, setShowKeyDetails] = useState<KeywordType|null>(null);
    const [showRemoveModal, setShowRemoveModal] = useState<boolean>(false);
@@ -91,9 +91,11 @@ const KeywordsTable = (props: KeywordsTableProps) => {
    };
 
    const processedKeywords: {[key:string] : KeywordType[]} = useMemo(() => {
-      const procKeywords = keywords.filter((x) => x.device === device);
-      const filteredKeywords = filterKeywords(procKeywords, filterParams);
+      const filteredKeywords = filterKeywords(keywords, filterParams);
       const sortedKeywords = sortKeywords(filteredKeywords, sortBy, scDataType);
+      if (device === 'all') {
+         return { all: sortedKeywords };
+      }
       return keywordsByDevice(sortedKeywords, device);
    }, [keywords, device, sortBy, filterParams, scDataType]);
 
@@ -164,7 +166,7 @@ const KeywordsTable = (props: KeywordsTableProps) => {
          manageTags={() => setShowTagManager(keyword.ID)}
          removeKeyword={() => { setSelectedKeywords([keyword.ID]); setShowRemoveModal(true); }}
          showKeywordDetails={() => setShowKeyDetails(keyword)}
-         lastItem={index === (processedKeywords[device].length - 1)}
+         lastItem={index === (currentKeywords.length - 1)}
          showSCData={showSCData}
          scDataType={scDataType}
          tableColumns={tableColumns}
@@ -175,7 +177,8 @@ const KeywordsTable = (props: KeywordsTableProps) => {
       );
    };
 
-   const selectedAllItems = selectedKeywords.length === processedKeywords[device].length;
+   const currentKeywords = useMemo(() => processedKeywords[device] || processedKeywords.all || [], [processedKeywords, device]);
+   const selectedAllItems = selectedKeywords.length === currentKeywords.length;
 
    return (
       <div>
@@ -253,11 +256,11 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                    text-gray-600 justify-between items-center font-semibold border-y`}>
                      <span ref={titleColumnRef} className={`domKeywords_head_keyword flex-1 basis-[4rem] w-auto lg:flex-1 
                         ${showSCData && tableColumns.includes('Search Console') ? 'lg:basis-20' : 'lg:basis-10'} lg:w-auto lg:flex lg:items-center `}>
-                     {processedKeywords[device].length > 0 && (
+                     {currentKeywords.length > 0 && (
                         <button
-                           className={`p-0 mr-2 leading-[0px] inline-block rounded-sm pt-0 px-[1px] pb-[3px]  border border-slate-300 
+                           className={`p-0 mr-2 leading-[0px] inline-block rounded-sm pt-0 px-[1px] pb-[3px]  border border-slate-300
                            ${selectedAllItems ? ' bg-blue-700 border-blue-700 text-white' : 'text-transparent'}`}
-                           onClick={() => setSelectedKeywords(selectedAllItems ? [] : processedKeywords[device].map((k: KeywordType) => k.ID))}
+                           onClick={() => setSelectedKeywords(selectedAllItems ? [] : currentKeywords.map((k: KeywordType) => k.ID))}
                            >
                               <Icon type="check" size={10} />
                         </button>
@@ -309,11 +312,11 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                      )}
                   </div>
                   <div className='domKeywords_keywords border-gray-200 min-h-[55vh] relative'>
-                     {processedKeywords[device] && processedKeywords[device].length > 0 && (
+                     {currentKeywords.length > 0 && (
                         <List
                         innerElementType="div"
-                        itemData={processedKeywords[device]}
-                        itemCount={processedKeywords[device].length}
+                        itemData={currentKeywords}
+                        itemCount={currentKeywords.length}
                         itemSize={isMobile ? 146 : 57}
                         height={SCListHeight}
                         width={'100%'}
@@ -322,8 +325,8 @@ const KeywordsTable = (props: KeywordsTableProps) => {
                            {Row}
                         </List>
                      )}
-                     {!isLoading && processedKeywords[device].length === 0 && (
-                        <p className=' p-9 pt-[10%] text-center text-gray-500'>No Keywords Added for this Device Type.</p>
+                     {!isLoading && currentKeywords.length === 0 && (
+                        <p className=' p-9 pt-[10%] text-center text-gray-500'>No Keywords added yet.</p>
                      )}
                      {isLoading && (
                         <p className=' p-9 pt-[10%] text-center text-gray-500'>Loading Keywords...</p>

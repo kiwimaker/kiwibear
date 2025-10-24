@@ -318,14 +318,22 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </div>
               <p className="text-sm text-slate-600 mb-4">
                 Lista las keywords de un dominio, incluyendo histórico condensado (últimos 7 días),
-                tags, datos Search Console integrados y captura rápida de competidores.
+                tags, datos Search Console integrados y captura rápida de competidores. Incluye
+                detección de canibalización (cuando una keyword posiciona múltiples URLs del mismo
+                dominio) y la última URL detectada en los resultados.
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  {
-                    '{ keywords: KeywordType[], competitors: string[], sortOrderSupported: boolean }'
-                  }
+                  <span>
+                    {
+                      '{ keywords: KeywordType[], competitors: string[], sortOrderSupported: boolean }'
+                    }
+                    . Cada keyword incluye{' '}
+                    <code className="bg-slate-100 px-1 py-0.5 rounded">cannibalization</code>{' '}
+                    (boolean) y{' '}
+                    <code className="bg-slate-100 px-1 py-0.5 rounded">lastUrl</code> (string).
+                  </span>
                 </InfoRow>
               </dl>
             </article>

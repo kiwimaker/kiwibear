@@ -91,9 +91,26 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
          const competitorSnapshot = competitorsList.length > 0 && Array.isArray(keyword.lastResult)
             ? computeCompetitorSnapshot(keyword.lastResult, competitorsList)
             : {};
+
+         // Detect cannibalization and get last URL
+         let cannibalization = false;
+         let lastUrl: string | undefined = undefined;
+         if (Array.isArray(keyword.lastResult)) {
+            const domainResults = keyword.lastResult.filter((item) => item?.matchesDomain);
+            if (domainResults.length > 0) {
+               // Get first matching URL as last URL
+               lastUrl = domainResults[0]?.url || undefined;
+               // Check for cannibalization (more than 1 unique URL from same domain)
+               const uniqueUrls = new Set(domainResults.map((item) => item.url).filter(Boolean));
+               cannibalization = uniqueUrls.size > 1;
+            }
+         }
+
          const keywordWithSlimHistory = {
             ...keyword,
             domainMatches,
+            cannibalization,
+            lastUrl,
             lastResult: [],
             history: lastWeekHistory,
             competitors: competitorSnapshot,

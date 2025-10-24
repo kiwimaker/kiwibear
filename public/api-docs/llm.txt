@@ -126,12 +126,18 @@ Response 200:
       "tags": ["fruit", "ranking"],
       "updating": false,
       "lastUpdated": "2024-01-12T08:00:00.000Z",
-      "competitors": { "rival.com": { "position": 5 } }
+      "competitors": { "rival.com": { "position": 5 } },
+      "cannibalization": false,
+      "lastUrl": "https://example.com/best-kiwi-guide"
     }
   ],
   "competitors": ["rival.com", "other.com"],
   "sortOrderSupported": true
 }
+
+Note:
+- "cannibalization" (boolean) indica si la keyword posiciona múltiples URLs diferentes del mismo dominio
+- "lastUrl" (string) contiene la URL de mejor posición (primera) del dominio en los resultados
 
 GET /api/keyword?id=1001
 Response 200:

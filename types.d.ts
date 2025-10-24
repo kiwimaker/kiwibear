@@ -67,6 +67,8 @@ type KeywordType = {
    settings?: KeywordCustomSettings,
    sortOrder?: number|null,
    competitors?: KeywordCompetitorSnapshot,
+   cannibalization?: boolean,
+   lastUrl?: string,
 }
 
 type KeywordLastResult = {

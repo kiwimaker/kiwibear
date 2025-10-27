@@ -128,7 +128,9 @@ Response 200:
       "lastUpdated": "2024-01-12T08:00:00.000Z",
       "competitors": { "rival.com": { "position": 5 } },
       "cannibalization": false,
-      "lastUrl": "https://example.com/best-kiwi-guide"
+      "lastUrl": "https://example.com/best-kiwi-guide",
+      "metaTitle": "Best Kiwi Fruit | Example.com",
+      "metaDescription": "Discover how to pick the sweetest kiwi fruit with our guide."
     }
   ],
   "competitors": ["rival.com", "other.com"],
@@ -138,6 +140,7 @@ Response 200:
 Note:
 - "cannibalization" (boolean) indica si la keyword posiciona múltiples URLs diferentes del mismo dominio
 - "lastUrl" (string) contiene la URL de mejor posición (primera) del dominio en los resultados
+- "metaTitle" y "metaDescription" (strings, opcionales) se rellenan con el resultado orgánico principal (coincidencia propia prioritaria)
 
 GET /api/keyword?id=1001
 Response 200:
@@ -151,7 +154,9 @@ Response 200:
     },
     "lastResult": [
       { "position": 1, "url": "https://rival.com/guide", "title": "Guide to Kiwi", "matchesDomain": false }
-    ]
+    ],
+    "metaTitle": "Guide to Kiwi",
+    "metaDescription": "In-depth guide about kiwi varieties."
   }
 }
 

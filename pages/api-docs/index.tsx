@@ -356,7 +356,12 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
-                <InfoRow label="Respuesta">{'{ keyword: KeywordType | null }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  {'{ keyword: KeywordType | null }'} (incluye{' '}
+                  <code className="bg-slate-100 px-1 py-0.5 rounded">metaTitle</code> y{' '}
+                  <code className="bg-slate-100 px-1 py-0.5 rounded">metaDescription</code> cuando
+                  hay resultados orgánicos almacenados).
+                </InfoRow>
               </dl>
             </article>
 

@@ -40,6 +40,15 @@ const getKeyword = async (req: NextApiRequest, res: NextApiResponse<KeywordGetRe
                competitors: computeCompetitorSnapshot(keywordData.lastResult, competitorsList),
             };
          }
+         const results = Array.isArray(keywordData.lastResult) ? keywordData.lastResult : [];
+         if (results.length > 0) {
+            const primaryResult = results.find((item) => item?.matchesDomain) || results[0];
+            keywordData = {
+               ...keywordData,
+               metaTitle: primaryResult?.title,
+               metaDescription: primaryResult?.snippet,
+            };
+         }
       }
       return res.status(200).json({ keyword: keywordData });
    } catch (error) {

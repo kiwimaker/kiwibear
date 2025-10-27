@@ -69,6 +69,8 @@ type KeywordType = {
    competitors?: KeywordCompetitorSnapshot,
    cannibalization?: boolean,
    lastUrl?: string,
+   metaTitle?: string,
+   metaDescription?: string,
 }
 
 type KeywordLastResult = {

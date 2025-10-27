@@ -106,6 +106,14 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
             }
          }
 
+         let primaryResult: KeywordLastResult | undefined;
+         if (Array.isArray(keyword.lastResult) && keyword.lastResult.length > 0) {
+            const domainResult = keyword.lastResult.find((item) => item?.matchesDomain);
+            primaryResult = domainResult || keyword.lastResult[0];
+         }
+         const metaTitle = primaryResult?.title;
+         const metaDescription = primaryResult?.snippet;
+
          const keywordWithSlimHistory = {
             ...keyword,
             domainMatches,
@@ -114,6 +122,8 @@ const getKeywords = async (req: NextApiRequest, res: NextApiResponse<KeywordsGet
             lastResult: [],
             history: lastWeekHistory,
             competitors: competitorSnapshot,
+            metaTitle,
+            metaDescription,
          };
          const finalKeyword = domainSCData ? integrateKeywordSCData(keywordWithSlimHistory, domainSCData) : keywordWithSlimHistory;
          if (competitorsList.length > 0) {

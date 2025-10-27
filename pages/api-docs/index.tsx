@@ -320,7 +320,12 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
                 Lista las keywords de un dominio, incluyendo histórico condensado (últimos 7 días),
                 tags, datos Search Console integrados y captura rápida de competidores. Incluye
                 detección de canibalización (cuando una keyword posiciona múltiples URLs del mismo
-                dominio) y la última URL detectada en los resultados.
+                dominio) y la última URL detectada en los resultados. Además expone el
+                <code className="bg-slate-100 px-1 py-0.5 rounded ml-1 mr-1">metaTitle</code>
+                y la
+                <code className="bg-slate-100 px-1 py-0.5 rounded ml-1 mr-1">metaDescription</code>
+                asociadas al resultado orgánico principal (coincidencia propia si existe, o el
+                primer resultado disponible).
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>

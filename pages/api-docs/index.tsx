@@ -44,6 +44,20 @@ const InfoRow = ({ label, children }: InfoRowProps) => (
   </div>
 );
 
+type ResponseBlockProps = {
+  json: string;
+  description?: string;
+};
+
+const ResponseBlock = ({ json, description }: ResponseBlockProps) => (
+  <div className="space-y-2">
+    {description && <p className="text-xs text-slate-600">{description}</p>}
+    <pre className="bg-slate-900 text-slate-100 text-xs rounded-lg p-4 overflow-x-auto">
+      <code>{json}</code>
+    </pre>
+  </div>
+);
+
 const ApiDocsPage = () => {
   const router = useRouter();
   const [showAddDomain, setShowAddDomain] = useState(false);
@@ -167,17 +181,26 @@ const ApiDocsPage = () => {
                   boolean).
                 </InfoRow>
                 <InfoRow label="Respuesta">
-                  <span>
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">domains</code> array de{' '}
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">DomainType</code>. Cuando se
-                    solicita con estadísticas añade&nbsp;
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">keywordCount</code>,
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">avgPosition</code>,
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">keywordsUpdated</code>,
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">scVisits</code>,
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">scImpressions</code> y
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">scPosition</code>.
-                  </span>
+                  <ResponseBlock
+                    description={
+                      'Array de dominios. Con withstats=true incluye keywordCount, avgPosition, '
+                      + 'keywordsUpdated, scVisits, scImpressions y scPosition.'
+                    }
+                    json={`{
+  "domains": [
+    {
+      "domain": "example.com",
+      "slug": "example-com",
+      "keywordCount": 150,
+      "avgPosition": 12.5,
+      "keywordsUpdated": 145,
+      "scVisits": 1250,
+      "scImpressions": 25000,
+      "scPosition": 8.3
+    }
+  ]
+}`}
+                  />
                 </InfoRow>
               </dl>
               <pre className="mt-4 bg-slate-900 text-slate-100 text-xs rounded-lg p-4 overflow-x-auto">
@@ -201,12 +224,29 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Solo sesión (no disponible con API key).</InfoRow>
                 <InfoRow label="Body">
-                  <code className="bg-slate-100 px-1 py-0.5 rounded">
-                    {'{ domains: string[] }'}
-                  </code>
-                  . Puedes enviar URLs completas o hosts.
+                  <ResponseBlock
+                    description="Puedes enviar URLs completas o hosts."
+                    json={`{
+  "domains": [
+    "example.com",
+    "https://another-site.com"
+  ]
+}`}
+                  />
                 </InfoRow>
-                <InfoRow label="Respuesta">{'{ domains: DomainType[] }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "domains": [
+    {
+      "domain": "example.com",
+      "slug": "example-com",
+      "added": "2025-01-15T10:30:00.000Z"
+    }
+  ]
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -227,8 +267,15 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
                   <code className="bg-slate-100 px-1 py-0.5 rounded">domain</code> obligatorio.
                 </InfoRow>
                 <InfoRow label="Body">
-                  <code className="bg-slate-100 px-1 py-0.5 rounded">DomainSettings</code> (ver{' '}
-                  <code className="bg-slate-100 px-1 py-0.5 rounded">types.d.ts</code>).
+                  <ResponseBlock
+                    description="DomainSettings: configuración de notificaciones, Search Console, competidores, etc."
+                    json={`{
+  "notification_interval": "daily",
+  "notification_emails": ["admin@example.com"],
+  "competitors": ["competitor1.com", "competitor2.com"],
+  "auto_fetch_top20": true
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -247,7 +294,13 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Solo sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  {'{ domainRemoved, keywordsRemoved, SCDataRemoved }'}
+                  <ResponseBlock
+                    json={`{
+  "domainRemoved": 1,
+  "keywordsRemoved": 150,
+  "SCDataRemoved": true
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -265,7 +318,19 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión o API key.</InfoRow>
-                <InfoRow label="Respuesta">{'{ domain: DomainType | null }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "domain": {
+    "domain": "example.com",
+    "slug": "example-com",
+    "notification_interval": "daily",
+    "notification_emails": ["admin@example.com"],
+    "competitors": ["competitor1.com", "competitor2.com"]
+  }
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -287,19 +352,30 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
                 <InfoRow label="Operaciones">
                   <ul className="list-disc pl-5 space-y-1 text-xs text-slate-600">
                     <li>
-                      <span className="font-semibold">GET</span> · devuelve{' '}
-                      <code className="bg-slate-100 px-1 py-0.5 rounded">stats</code>.
+                      <span className="font-semibold">GET</span> · devuelve estadísticas de scraping
                     </li>
                     <li>
-                      <span className="font-semibold">DELETE</span> · reinicia los contadores para
-                      el dominio.
+                      <span className="font-semibold">DELETE</span> · reinicia los contadores
                     </li>
                     <li>
-                      <span className="font-semibold">POST</span> · reconstruye las estadísticas a
-                      partir de los logs (
-                      <code className="bg-slate-100 px-1 py-0.5 rounded">rebuild</code>).
+                      <span className="font-semibold">POST</span> · reconstruye estadísticas desde logs
                     </li>
                   </ul>
+                </InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    description="GET respuesta:"
+                    json={`{
+  "stats": {
+    "totalScrapes": 5000,
+    "last30Days": 1200,
+    "monthlyStats": {
+      "2025-01": 800,
+      "2024-12": 950
+    }
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -330,15 +406,32 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  <span>
-                    {
-                      '{ keywords: KeywordType[], competitors: string[], sortOrderSupported: boolean }'
-                    }
-                    . Cada keyword incluye{' '}
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">cannibalization</code>{' '}
-                    (boolean) y{' '}
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">lastUrl</code> (string).
-                  </span>
+                  <ResponseBlock
+                    description="Incluye histórico de últimos 7 días, cannibalization, lastUrl, metaTitle y metaDescription."
+                    json={`{
+  "keywords": [
+    {
+      "ID": 123,
+      "keyword": "hosting wordpress",
+      "domain": "example.com",
+      "position": 8,
+      "url": "https://example.com/hosting",
+      "device": "desktop",
+      "country": "US",
+      "cannibalization": false,
+      "lastUrl": "https://example.com/hosting",
+      "metaTitle": "Hosting WordPress Premium",
+      "metaDescription": "El mejor hosting...",
+      "history": {
+        "2025-01-22": { "position": 8 },
+        "2025-01-21": { "position": 9 }
+      }
+    }
+  ],
+  "competitors": ["competitor1.com"],
+  "sortOrderSupported": true
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -357,10 +450,36 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  {'{ keyword: KeywordType | null }'} (incluye{' '}
-                  <code className="bg-slate-100 px-1 py-0.5 rounded">metaTitle</code> y{' '}
-                  <code className="bg-slate-100 px-1 py-0.5 rounded">metaDescription</code> cuando
-                  hay resultados orgánicos almacenados).
+                  <ResponseBlock
+                    description="Incluye histórico completo (no limitado a 7 días), metaTitle y metaDescription."
+                    json={`{
+  "keyword": {
+    "ID": 123,
+    "keyword": "hosting wordpress",
+    "domain": "example.com",
+    "position": 8,
+    "url": "https://example.com/hosting",
+    "device": "desktop",
+    "country": "US",
+    "metaTitle": "Hosting WordPress Premium",
+    "metaDescription": "El mejor hosting...",
+    "history": {
+      "2025-01-22": { "position": 8 },
+      "2025-01-21": { "position": 9 },
+      "2025-01-20": { "position": 10 }
+    },
+    "lastResult": [
+      {
+        "position": 8,
+        "url": "https://example.com/hosting",
+        "title": "Hosting WordPress Premium",
+        "snippet": "El mejor hosting...",
+        "matchesDomain": true
+      }
+    ]
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -379,9 +498,21 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Body">
-                  {'{ keywords: KeywordAddPayload[] }'} (palabra, dominio, dispositivo, país, tags
-                  opcionales y ajustes como{' '}
-                  <code className="bg-slate-100 px-1 py-0.5 rounded">fetchTop20</code>).
+                  <ResponseBlock
+                    description="Array de KeywordAddPayload con palabra, dominio, dispositivo, país, tags opcionales y ajustes."
+                    json={`{
+  "keywords": [
+    {
+      "keyword": "hosting wordpress",
+      "domain": "example.com",
+      "device": "desktop",
+      "country": "US",
+      "tags": "hosting,wordpress",
+      "fetchTop20": true
+    }
+  ]
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -400,9 +531,19 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Body">
-                  {
-                    '{ sticky?: boolean, tags?: Record<string, string[]>, settings?: KeywordCustomSettings }'
-                  }
+                  <ResponseBlock
+                    description="Actualiza sticky, tags o configuración personalizada como serpPages."
+                    json={`{
+  "sticky": true,
+  "tags": {
+    "123": ["seo", "importante"]
+  },
+  "settings": {
+    "fetchTop20": true,
+    "serpPages": 2
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -419,7 +560,13 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
-                <InfoRow label="Respuesta">{'{ keywordsRemoved: number }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "keywordsRemoved": 3
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -435,7 +582,18 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
-                <InfoRow label="Body">{'{ sortOrder: Record<keywordId, number> }'}</InfoRow>
+                <InfoRow label="Body">
+                  <ResponseBlock
+                    description="Record mapeando keywordId a su posición de ordenamiento."
+                    json={`{
+  "sortOrder": {
+    "123": 1,
+    "124": 2,
+    "125": 3
+  }
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -461,7 +619,18 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
                   </span>
                 </InfoRow>
                 <InfoRow label="Respuesta">
-                  {'{ keywords: KeywordType[] }'} (puede devolver la petición en background).
+                  <ResponseBlock
+                    description="Puede devolver la petición en background."
+                    json={`{
+  "keywords": [
+    {
+      "ID": 123,
+      "keyword": "hosting wordpress",
+      "updating": true
+    }
+  ]
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -480,7 +649,22 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  {'{ searchResult: { keyword, position, country, results[] } }'}
+                  <ResponseBlock
+                    json={`{
+  "searchResult": {
+    "keyword": "hosting",
+    "position": 0,
+    "country": "US",
+    "results": [
+      {
+        "position": 1,
+        "url": "https://competitor.com",
+        "title": "Best Hosting 2025"
+      }
+    ]
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -499,7 +683,22 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Body">
-                  {'{ keywords?: number[], domain?: string, update?: boolean }'}
+                  <ResponseBlock
+                    description="Array de IDs de keywords, dominio completo, o bandera update."
+                    json={`{
+  "keywords": [123, 124, 125],
+  "domain": "example.com",
+  "update": true
+}`}
+                  />
+                </InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "updated": true,
+  "keywordsUpdated": 25
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -524,7 +723,26 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  {'{ data: SCDomainDataType | null, error?: string }'}
+                  <ResponseBlock
+                    json={`{
+  "data": {
+    "domain": "example.com",
+    "lastFetched": "2025-01-22T10:00:00.000Z",
+    "stats7": {
+      "clicks": 1250,
+      "impressions": 25000,
+      "ctr": 5.0,
+      "position": 8.3
+    },
+    "stats30": {
+      "clicks": 5200,
+      "impressions": 98000,
+      "ctr": 5.3,
+      "position": 8.1
+    }
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -543,7 +761,11 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  {"{ status: 'completed' | 'failed', error?: string }"}
+                  <ResponseBlock
+                    json={`{
+  "status": "completed"
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -562,7 +784,32 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  {'{ data: InsightDataType | null, error?: string }'}
+                  <ResponseBlock
+                    json={`{
+  "data": {
+    "topPages": [
+      {
+        "page": "/hosting-wordpress",
+        "clicks": 850,
+        "impressions": 12000
+      }
+    ],
+    "topKeywords": [
+      {
+        "keyword": "hosting wordpress",
+        "clicks": 450,
+        "position": 3.2
+      }
+    ],
+    "topCountries": [
+      {
+        "country": "US",
+        "clicks": 2500
+      }
+    ]
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -588,7 +835,13 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
-                <InfoRow label="Respuesta">{'{ started: boolean, error?: string }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "started": true
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -605,7 +858,13 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">API key o sesión.</InfoRow>
-                <InfoRow label="Respuesta">{'{ success: boolean, error?: string }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "success": true
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -624,10 +883,23 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  <span>
-                    GET: {'{ logs: DomainScrapeLogType[], stats: { totalCount, totalSizeBytes } }'}{' '}
-                    · DELETE: {'{ success: boolean, cleared: number }'}
-                  </span>
+                  <ResponseBlock
+                    description="GET respuesta:"
+                    json={`{
+  "logs": [
+    {
+      "domain": "example.com",
+      "timestamp": "2025-01-22T10:00:00.000Z",
+      "keywordsScraped": 150,
+      "duration": 45000
+    }
+  ],
+  "stats": {
+    "totalCount": 1250,
+    "totalSizeBytes": 524288
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -645,7 +917,13 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
-                <InfoRow label="Respuesta">{'{ cleared: true }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "cleared": true
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -664,9 +942,12 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  <span>
-                    GET: {'{ hasMigrations: boolean }'} · POST: {'{ migrated: boolean }'}
-                  </span>
+                  <ResponseBlock
+                    description="GET responde si hay migraciones pendientes. POST ejecuta las migraciones."
+                    json={`{
+  "hasMigrations": false
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -689,7 +970,24 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
-                <InfoRow label="Respuesta">{'{ data: KeywordIdeasDatabase | null }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "data": {
+    "domain": "example.com",
+    "lastUpdated": "2025-01-22T10:00:00.000Z",
+    "ideas": [
+      {
+        "keyword": "hosting vps",
+        "volume": 8100,
+        "competition": "medium",
+        "favorite": false
+      }
+    ]
+  }
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -707,9 +1005,26 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Body">
-                  {
-                    '{ keywords?: string[], country: string, language: string, domain?: string, seedType, seedSCKeywords?, seedCurrentKeywords? }'
-                  }
+                  <ResponseBlock
+                    description="Solicita ideas desde Google Ads. seedType puede ser 'keywords', 'url' o 'current'."
+                    json={`{
+  "keywords": ["hosting", "wordpress"],
+  "country": "US",
+  "language": "en",
+  "domain": "example.com",
+  "seedType": "keywords",
+  "seedSCKeywords": false,
+  "seedCurrentKeywords": false
+}`}
+                  />
+                </InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "success": true,
+  "ideasCount": 150
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -726,7 +1041,21 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </p>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
-                <InfoRow label="Body">{'{ keywordID: string, domain: string }'}</InfoRow>
+                <InfoRow label="Body">
+                  <ResponseBlock
+                    json={`{
+  "keywordID": "hosting-vps",
+  "domain": "example.com"
+}`}
+                  />
+                </InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "updated": true
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -745,11 +1074,16 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Notas">
-                  <span>
-                    GET responde HTML plano para mostrar el resultado de la integración. POST espera{' '}
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">developer_token</code> y{' '}
-                    <code className="bg-slate-100 px-1 py-0.5 rounded">account_id</code>.
-                  </span>
+                  GET responde HTML plano para mostrar el resultado de la integración.
+                </InfoRow>
+                <InfoRow label="Body">
+                  <ResponseBlock
+                    description="POST body para validar credenciales:"
+                    json={`{
+  "developer_token": "YOUR_DEVELOPER_TOKEN",
+  "account_id": "1234567890"
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -776,8 +1110,19 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               <dl className="space-y-2">
                 <InfoRow label="Auth">Sesión.</InfoRow>
                 <InfoRow label="Respuesta">
-                  GET: {'{ settings: SettingsType }'} · POST: {'{ settings: SettingsType }'} (los
-                  campos sensibles se guardan cifrados).
+                  <ResponseBlock
+                    description="Los campos sensibles se guardan cifrados."
+                    json={`{
+  "settings": {
+    "scraper": "scrapingant",
+    "notification_interval": "daily",
+    "notification_email_from": "noreply@example.com",
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "version": "2.0.0"
+  }
+}`}
+                  />
                 </InfoRow>
               </dl>
             </article>
@@ -798,8 +1143,21 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
                 <code className="bg-slate-100 px-1 py-0.5 rounded">SECRET</code>.
               </p>
               <dl className="space-y-2">
-                <InfoRow label="Body">{'{ username: string, password: string }'}</InfoRow>
-                <InfoRow label="Respuesta">{'{ success: boolean, error?: string }'}</InfoRow>
+                <InfoRow label="Body">
+                  <ResponseBlock
+                    json={`{
+  "username": "admin",
+  "password": "your-password"
+}`}
+                  />
+                </InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "success": true
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
 
@@ -812,7 +1170,13 @@ ${'--'}request GET https://tu-servidor/api/domains?withstats=true`}</code>
               </div>
               <p className="text-sm text-slate-600 mb-4">Revoca la cookie de sesión actual.</p>
               <dl className="space-y-2">
-                <InfoRow label="Respuesta">{'{ success: boolean }'}</InfoRow>
+                <InfoRow label="Respuesta">
+                  <ResponseBlock
+                    json={`{
+  "success": true
+}`}
+                  />
+                </InfoRow>
               </dl>
             </article>
           </div>

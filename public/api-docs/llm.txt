@@ -164,11 +164,14 @@ POST /api/keywords  (solo sesión)
 Body:
 {
   "keywords": [
-    { "keyword": "buy kiwi online", "device": "desktop", "country": "US", "domain": "example.com", "tags": "shopping,kiwi" }
+    { "keyword": "buy kiwi online", "device": "desktop", "country": "US", "domain": "example.com", "tags": "shopping,kiwi", "city": "New York,New York,United States" }
   ]
 }
 Response 201:
 { "keywords": [{ "ID": 1010, "keyword": "buy kiwi online", "domain": "example.com", "updating": true, ... }] }
+
+Note:
+- "city" (string, opcional) permite especificar una ubicación geográfica para búsquedas localizadas. El formato es "Ciudad,Región,País" (ej: "New York,New York,United States", "Barcelona,Catalonia,Spain")
 
 PUT /api/keywords?id=1001  (solo sesión)
 Body:
